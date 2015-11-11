@@ -1,7 +1,21 @@
 body {
   padding: 20px;
+  background: darkkhaki;
 
   .container {
     padding: 20px;
+  }
+}
+
+.number-pad {
+  width: 50%;
+
+  .number-buttons {
+    width: 120px;
+
+    button {
+      width: 40px;
+      height: 40px;
+    }
   }
 }
