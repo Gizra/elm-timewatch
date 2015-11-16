@@ -1,21 +1,50 @@
-body {
-  padding: 20px;
-  background: darkkhaki;
+$button_size: 100px;
+$button_margin: 10px;
 
-  .container {
-    padding: 20px;
-  }
+body {
+  background: #333;
+  background: white;
 }
 
-.number-pad {
-  width: 50%;
+.keypad {
 
   .number-buttons {
-    width: 120px;
+    width: 3 * $button_size + 2 * $button_margin;
+    margin: 200px auto 0;
+    direction: rtl;
+    box-shadow: 0px 0px 1px black;
+    padding: 40px;
+
 
     button {
-      width: 40px;
-      height: 40px;
+      background: white;
+      border: none;
+      border-radius: 50%;
+      width: $button_size;
+      height: $button_size;
+      margin-right: $button_margin;
+      margin-bottom: $button_margin;
+      color: white;
+      font-size: 50px;
+      font-weight: bold;
+      text-shadow: 0px 0px 1px black;
+      box-shadow: 0px 0px 1px black;
+      outline: 0;
+      cursor: pointer;
+
+      &:hover {
+        box-shadow: 0px 0px 1px yellowgreen;
+        text-shadow: 0px 0px 1px yellowgreen;
+      }
+
+      &:nth-child(3n + 1) {
+        margin-right: 0;
+      }
+
+      &:last-child {
+        margin-right: $button_size + $button_margin;
+        margin-bottom: 0;
+      }
     }
   }
 }
