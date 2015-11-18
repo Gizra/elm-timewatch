@@ -172,7 +172,7 @@ view address model =
         text' =
           String.slice delta (delta + 1) model.pincode
       in
-      div [ class  "item pin" ] [ text text']
+        div [ class  "item pin" ] [ text text']
 
     pincode =
       div
@@ -187,12 +187,35 @@ view address model =
         , simpleDiv "item icon -dynamic-icon"
         ]
       ]
+
+    clockIcon =
+      i [ class "fa fa-clock-o icon" ] []
+
+    date =
+      div
+        [ class "col-xs-5 main-header info text-center" ]
+        [ span
+            []
+            [ span
+                []
+                [ text "Thursday, November 12, 2015" ]
+            , span
+                [ class "time "]
+                [ clockIcon
+                , span [] [text "13:25"]
+                ]
+
+            ]
+        ]
+
   in
     div
       [ class "container"]
       [ div
           [ class "row dashboard" ]
-          [ pincode ]
+          [ pincode
+          , date
+          ]
       , viewMainContent address model
       ]
 
