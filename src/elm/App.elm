@@ -159,17 +159,63 @@ getErrorMessageFromHttpResponse error =
 
 view : Signal.Address Action -> Model -> Html
 view address model =
-  div
-    [ class "keypad" ]
-    [ div
-        [ class "preview" ]
-        ( List.map digitPreview (String.toList model.pincode) )
-    , div
-        [ class "number-buttons" ]
-        ( List.map (digitButton address) [0..9] |> List.reverse )
-    , (viewMessage model.message)
-    , div [ class "model-debug" ] [ text (toString model) ]
-    ]
+  let
+    digitButton digit =
+      button [ onClick address (AddDigit digit) ] [ text <| toString digit ]
+
+
+    simpleDiv class' =
+      div [ class  class' ] []
+
+    pincode =
+      div
+      [ class "col-xs-5 main-header pin-code text-center" ]
+      [ div
+        [ class "code clearfix" ]
+        [ simpleDiv "item icon fa fa-lock "
+        , simpleDiv "item pin"
+        , simpleDiv "item icon -dynamic-icon"
+        ]
+      ]
+
+-- div class="col-xs-5 main-header pin-code text-center">
+--           <div class="code clearfix">
+--             <div class="item icon fa fa-lock"></div>
+--             <div class="item pin"></div>
+--             <div class="item pin"></div>
+--             <div class="item pin"></div>
+--             <div class="item pin"></div>
+--             <div class="item icon -dynamic-icon"></div>
+--           </div>
+--         </div>
+
+  in
+    div
+      [ class "container"]
+      [ div
+          [ class "row dashboard" ]
+          [ pincode ]
+      , viewMainContent address model
+      ]
+
+
+viewMainContent : Signal.Address Action -> Model -> Html
+viewMainContent address model =
+  let
+    digitButton digit =
+      button [ onClick address (AddDigit digit) ] [ text <| toString digit ]
+  in
+    div
+      [ class "keypad" ]
+      [ div
+          [ class "preview" ]
+          ( List.map digitPreview (String.toList model.pincode) )
+      , div
+          [ class "number-buttons" ]
+          ( List.map digitButton [0..9] |> List.reverse )
+      , (viewMessage model.message)
+      , div [ class "model-debug" ] [ text (toString model) ]
+      ]
 
 viewMessage : Message -> Html
 viewMessage message =
@@ -182,9 +228,7 @@ viewMessage message =
   in
     div [ id "status-message", class className ] [ text string ]
 
-digitButton : Signal.Address Action -> Int -> Html
-digitButton address digit =
-  button [ onClick address (AddDigit digit) ] [ text <| toString digit ]
+
 
 digitPreview : Char -> Html
 digitPreview digit =
