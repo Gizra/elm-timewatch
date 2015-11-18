@@ -5,7 +5,8 @@
 // https://www.google.co.il/search?q=abstract+blur+background&espv=2&biw=1920&bih=1094&source=lnms&tbm=isch&sa=X&ved=0CAYQ_AUoAWoVChMI0p60mbuKyQIVTNsaCh0PugO8#imgrc=_
 
 html {
-  background: url('../images/bg.jpg') no-repeat center center fixed;
+  // @todo: Improve the location of the images.
+  background: url('/bg.jpg') no-repeat center center fixed;
   -webkit-background-size: cover;
   -moz-background-size: cover;
   -o-background-size: cover;
@@ -371,9 +372,3 @@ body {
     }
   }
 }
-
-
-
-
-
-
