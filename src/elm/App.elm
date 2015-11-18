@@ -245,7 +245,7 @@ view address model =
     dateString =
       case model.date of
         Just time ->
-          DF.format "%A, %d %B, %Y" (Date.fromTime time)
+        Date.fromTime time |> DF.format "%A, %d %B, %Y"
 
         Nothing -> ""
 
@@ -253,7 +253,7 @@ view address model =
     timeString =
       case model.date of
         Just time ->
-          DF.format " %H:%M" (Date.fromTime time)
+          Date.fromTime time |> DF.format " %H:%M"
 
         Nothing -> ""
 
