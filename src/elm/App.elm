@@ -167,7 +167,11 @@ view address model =
     simpleDiv class' =
       div [ class  class' ] []
 
-    pincodeText text' =
+    pincodeText delta =
+      let
+        text' =
+          String.slice delta (delta + 1) model.pincode
+      in
       div [ class  "item pin" ] [ text text']
 
     pincode =
@@ -176,10 +180,10 @@ view address model =
       [ div
         [ class "code clearfix" ]
         [ simpleDiv "item icon fa fa-lock"
-        , pincodeText "1"
-        , pincodeText "2"
-        , pincodeText "3"
-        , pincodeText "4"
+        , pincodeText 0
+        , pincodeText 1
+        , pincodeText 2
+        , pincodeText 3
         , simpleDiv "item icon -dynamic-icon"
         ]
       ]
@@ -202,9 +206,6 @@ viewMainContent address model =
     div
       [ class "keypad" ]
       [ div
-          [ class "preview" ]
-          ( List.map digitPreview (String.toList model.pincode) )
-      , div
           [ class "number-buttons" ]
           ( List.map digitButton [0..9] |> List.reverse )
       , (viewMessage model.message)
