@@ -1,5 +1,10 @@
+bower_components
 elm-stuff
 node_modules
 serve
 dist
+.publish
 .idea
+# Compiled tests
+elm.js
+test.html

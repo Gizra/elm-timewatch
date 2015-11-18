@@ -1,4 +1,4 @@
-module Hi where
+module App where
 
 import Config exposing (backendUrl)
 import Effects exposing (Effects, Never)
@@ -68,8 +68,6 @@ update action model =
   case action of
     AddDigit digit ->
       let
-        _ = Debug.log "AddDigit" digit
-
         pincode' =
           if length model.pincode < pincodeLength
             then model.pincode ++ toString(digit)

@@ -1,6 +1,6 @@
 
 import Effects exposing (Never)
-import Hi exposing (init, update, view)
+import App exposing (init, update, view)
 import StartApp
 import Task
 
