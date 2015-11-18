@@ -140,7 +140,7 @@ body {
       }
     }
 
-    >.item:nth-child(n+2) {
+    .item:nth-child(n+2) {
       border-left: 1px solid $light;
     }
 

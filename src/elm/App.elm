@@ -229,10 +229,7 @@ view address model =
       [ div
         [ class "code clearfix" ]
         [ simpleDiv "item icon fa fa-lock"
-        , pincodeText 0
-        , pincodeText 1
-        , pincodeText 2
-        , pincodeText 3
+        , span [] ( List.map pincodeText [0..3] )
         , simpleDiv "item icon -dynamic-icon"
         ]
       ]
@@ -291,7 +288,7 @@ viewMainContent address model =
           [ class "number-buttons" ]
           ( List.map digitButton [0..9] |> List.reverse )
       , (viewMessage model.message)
-      , div [ class "model-debug" ] [ text (toString model) ]
+      , div [ class "model-debug" ] [ text <| toString model ]
       ]
 
 viewMessage : Message -> Html
