@@ -11,6 +11,7 @@ import Json.Decode as Json exposing ((:=))
 import Json.Encode as JE
 import String exposing (length)
 import Task
+import TaskTutorial exposing (getCurrentTime)
 import Time exposing (second)
 
 import Debug
@@ -41,6 +42,7 @@ type alias Model =
   , status : Status
   , message : Message
   , tickStatus : TickStatus
+  , date : Maybe Time.Time
   }
 
 initialModel : Model
@@ -49,6 +51,7 @@ initialModel =
   , status = Init
   , message = Empty
   , tickStatus = Ready
+  , date = Nothing
   }
 
 init : (Model, Effects Action)
@@ -65,7 +68,7 @@ pincodeLength = 4
 type Action
   = AddDigit Int
   | Reset
-  | SetDate
+  | SetDate Time.Time
   | SetMessage Message
   | SubmitCode
   | Tick
@@ -109,8 +112,11 @@ update action model =
         , getJson url model.pincode
         )
 
-    SetDate ->
-      ( { model | tickStatus <- Ready }
+    SetDate time ->
+      ( { model
+        | tickStatus <- Ready
+        , date <- Just time
+        }
       , Effects.none
       )
 
