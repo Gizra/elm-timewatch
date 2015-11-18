@@ -164,34 +164,22 @@ view address model =
       button [ onClick address (AddDigit digit) ] [ text <| toString digit ]
 
 
-    simpleDiv class' =
-      div [ class  class' ] []
+    simpleDiv class' text' =
+      div [ class  class' ] [ text text']
 
     pincode =
       div
       [ class "col-xs-5 main-header pin-code text-center" ]
       [ div
         [ class "code clearfix" ]
-        [ simpleDiv "item icon fa fa-lock "
-        , simpleDiv "item pin"
-        , simpleDiv "item pin"
-        , simpleDiv "item pin"
-        , simpleDiv "item pin"
-        , simpleDiv "item icon -dynamic-icon"
+        [ simpleDiv "item icon fa fa-lock" ""
+        , simpleDiv "item pin" "1"
+        , simpleDiv "item pin" "2"
+        , simpleDiv "item pin" "3"
+        , simpleDiv "item pin" "4"
+        , simpleDiv "item icon -dynamic-icon" ""
         ]
       ]
-
--- div class="col-xs-5 main-header pin-code text-center">
---           <div class="code clearfix">
---             <div class="item icon fa fa-lock"></div>
---             <div class="item pin"></div>
---             <div class="item pin"></div>
---             <div class="item pin"></div>
---             <div class="item pin"></div>
---             <div class="item icon -dynamic-icon"></div>
---           </div>
---         </div>
-
   in
     div
       [ class "container"]
