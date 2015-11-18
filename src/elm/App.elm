@@ -1,5 +1,6 @@
 module App where
 
+import Char
 import Config exposing (backendUrl)
 import Effects exposing (Effects, Never)
 import Html exposing (..)
@@ -10,7 +11,8 @@ import Json.Decode as Json exposing ((:=))
 import Json.Encode as JE
 import String exposing (length)
 import Task
-import Char
+import Time exposing (second)
+
 import Debug
 
 
@@ -27,6 +29,8 @@ type Status =
   | Fetched
   | HttpError Http.Error
 
+type TickStatus = Ready | Waiting
+
 type alias Response =
   { employee : String
   , action : String
@@ -36,6 +40,7 @@ type alias Model =
   { pincode : String
   , status : Status
   , message : Message
+  , tickStatus : TickStatus
   }
 
 initialModel : Model
@@ -43,12 +48,13 @@ initialModel =
   { pincode = ""
   , status = Init
   , message = Empty
+  , tickStatus = Ready
   }
 
 init : (Model, Effects Action)
 init =
   ( initialModel
-  , Effects.none
+  , tick 1
   )
 
 pincodeLength = 4
@@ -58,10 +64,13 @@ pincodeLength = 4
 
 type Action
   = AddDigit Int
-  | SubmitCode
-  | UpdateDataFromServer (Result Http.Error Response)
-  | SetMessage Message
   | Reset
+  | SetDate
+  | SetMessage Message
+  | SubmitCode
+  | Tick
+  | UpdateDataFromServer (Result Http.Error Response)
+
 
 update : Action -> Model -> (Model, Effects Action)
 update action model =
@@ -100,6 +109,19 @@ update action model =
         , getJson url model.pincode
         )
 
+    SetDate ->
+      ( { model | tickStatus <- Ready }
+      , Effects.none
+      )
+
+    Tick ->
+      let
+        effects =
+          if model.tickStatus == Waiting
+            then Effects.batch [ getDate, tick]
+            else Effects.none
+      in
+        (model, effects)
 
     UpdateDataFromServer result ->
       case result of
@@ -280,3 +302,14 @@ decodeResponse =
     <| Json.object2 Response
       ("employee" := Json.string)
       ("action" := Json.string)
+
+
+getDate : Effects Action
+getDate =
+  Task.map SetDate getCurrentTime |> Effects.task
+
+tick : Int -> Action -> Effects Action
+tick seconds action =
+  Task.sleep (seconds * Time.second)
+    |> Task.map (\_ -> action)
+    |> Effects.task
