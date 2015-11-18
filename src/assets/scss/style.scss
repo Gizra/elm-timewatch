@@ -217,13 +217,13 @@ body {
         right: 4px;
       }
 
-      &.on {
+      &.-on {
         border-color: darken($digit, 20%);
         background: $digit;
         @include box-shadow(0 2px 29px $digit);
       }
 
-      &.off {
+      &.-off {
         border-color: #A02727;
         background: #C34D4D;
         @include box-shadow(0 2px 29px #E00A0A);
@@ -366,9 +366,3 @@ body {
     }
   }
 }
-
-
-
-
-
-

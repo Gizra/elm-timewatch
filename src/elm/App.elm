@@ -45,6 +45,7 @@ type alias Model =
   , message : Message
   , tickStatus : TickStatus
   , date : Maybe Time.Time
+  , connected : Bool
   }
 
 initialModel : Model
@@ -54,6 +55,7 @@ initialModel =
   , message = Empty
   , tickStatus = Ready
   , date = Nothing
+  , connected = False
   }
 
 init : (Model, Effects Action)
@@ -196,8 +198,22 @@ view address model =
       button [ onClick address (AddDigit digit) ] [ text <| toString digit ]
 
 
+    ledLight =
+      let
+        className =
+          case model.connected of
+           False -> "-off"
+           True -> "-on"
+
+      in
+        div
+          [ class "col-xs-2 main-header led text-center"]
+          [ span [ class <| "light " ++ className ] []]
+
+
     simpleDiv class' =
       div [ class  class' ] []
+
 
     pincodeText delta =
       let
@@ -205,6 +221,7 @@ view address model =
           String.slice delta (delta + 1) model.pincode
       in
         div [ class  "item pin" ] [ text text']
+
 
     pincode =
       div
@@ -220,6 +237,7 @@ view address model =
         ]
       ]
 
+
     clockIcon =
       i [ class "fa fa-clock-o icon" ] []
 
@@ -227,39 +245,26 @@ view address model =
     dateString =
       case model.date of
         Just time ->
-          let
-            date =
-              Date.fromTime time
-          in
+          DF.format "%A, %d %B, %Y" (Date.fromTime time)
 
-            DF.format "%A, %d %B, %Y" date
         Nothing -> ""
+
 
     timeString =
       case model.date of
         Just time ->
-          let
-            date =
-              Date.fromTime time
-          in
+          DF.format " %H:%M" (Date.fromTime time)
 
-            DF.format "%H:%M" date
         Nothing -> ""
+
 
     date =
       div
         [ class "col-xs-5 main-header info text-center" ]
-        [ span
-            []
-            [ span
-                []
-                [ text dateString ]
-            , span
-                [ class "time "]
-                [ clockIcon
-                , span [] [text timeString ]
-                ]
-            ]
+        [span [][ text dateString ]
+        , span
+          [ class "time"]
+          [ clockIcon , span [] [text timeString ] ]
         ]
   in
     div
@@ -268,6 +273,7 @@ view address model =
           [ class "row dashboard" ]
           [ pincode
           , date
+          , ledLight
           ]
       , viewMainContent address model
       ]
@@ -298,14 +304,6 @@ viewMessage message =
         Success msg -> ("success", msg)
   in
     div [ id "status-message", class className ] [ text string ]
-
-
-
-digitPreview : Char -> Html
-digitPreview digit =
-    -- TODO: Converting the char to int, to avoid the quotes when printing it.
-    -- Is there a proper way to do that?
-    div [ ] [ text <| toString <| (Char.toCode digit) - (Char.toCode '0') ]
 
 
 -- EFFECTS
