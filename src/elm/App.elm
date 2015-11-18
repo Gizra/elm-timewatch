@@ -1,6 +1,9 @@
 module App where
 
+import Char
 import Config exposing (backendUrl)
+import Date exposing (..)
+import Date.Format as DF exposing (format)
 import Effects exposing (Effects, Never)
 import Html exposing (..)
 import Html.Attributes exposing (class, id)
@@ -10,7 +13,9 @@ import Json.Decode as Json exposing ((:=))
 import Json.Encode as JE
 import String exposing (length)
 import Task
-import Char
+import TaskTutorial exposing (getCurrentTime)
+import Time exposing (second)
+
 import Debug
 
 
@@ -27,6 +32,8 @@ type Status =
   | Fetched
   | HttpError Http.Error
 
+type TickStatus = Ready | Waiting
+
 type alias Response =
   { employee : String
   , action : String
@@ -36,6 +43,8 @@ type alias Model =
   { pincode : String
   , status : Status
   , message : Message
+  , tickStatus : TickStatus
+  , date : Maybe Time.Time
   }
 
 initialModel : Model
@@ -43,12 +52,14 @@ initialModel =
   { pincode = ""
   , status = Init
   , message = Empty
+  , tickStatus = Ready
+  , date = Nothing
   }
 
 init : (Model, Effects Action)
 init =
   ( initialModel
-  , Effects.none
+  , Effects.batch [getDate, tick]
   )
 
 pincodeLength = 4
@@ -58,10 +69,13 @@ pincodeLength = 4
 
 type Action
   = AddDigit Int
-  | SubmitCode
-  | UpdateDataFromServer (Result Http.Error Response)
-  | SetMessage Message
   | Reset
+  | SetDate Time.Time
+  | SetMessage Message
+  | SubmitCode
+  | Tick
+  | UpdateDataFromServer (Result Http.Error Response)
+
 
 update : Action -> Model -> (Model, Effects Action)
 update action model =
@@ -100,6 +114,24 @@ update action model =
         , getJson url model.pincode
         )
 
+    SetDate time ->
+        ( { model
+          | tickStatus <- Ready
+          , date <- Just time
+          }
+        , Effects.none
+        )
+
+    Tick ->
+      let
+        effects =
+          if model.tickStatus == Ready
+            then Effects.batch [ getDate, tick ]
+            else Effects.none
+      in
+        ( { model | tickStatus <- Waiting }
+        , effects
+        )
 
     UpdateDataFromServer result ->
       case result of
@@ -191,6 +223,29 @@ view address model =
     clockIcon =
       i [ class "fa fa-clock-o icon" ] []
 
+
+    dateString =
+      case model.date of
+        Just time ->
+          let
+            date =
+              Date.fromTime time
+          in
+
+            DF.format "%A, %d %B, %Y" date
+        Nothing -> ""
+
+    timeString =
+      case model.date of
+        Just time ->
+          let
+            date =
+              Date.fromTime time
+          in
+
+            DF.format "%H:%M" date
+        Nothing -> ""
+
     date =
       div
         [ class "col-xs-5 main-header info text-center" ]
@@ -198,16 +253,14 @@ view address model =
             []
             [ span
                 []
-                [ text "Thursday, November 12, 2015" ]
+                [ text dateString ]
             , span
                 [ class "time "]
                 [ clockIcon
-                , span [] [text "13:25"]
+                , span [] [text timeString ]
                 ]
-
             ]
         ]
-
   in
     div
       [ class "container"]
@@ -282,3 +335,14 @@ decodeResponse =
     <| Json.object2 Response
       ("employee" := Json.string)
       ("action" := Json.string)
+
+
+getDate : Effects Action
+getDate =
+  Task.map SetDate getCurrentTime |> Effects.task
+
+tick : Effects Action
+tick =
+  Task.sleep (1 * Time.second)
+    |> Task.map (\_ -> Tick)
+    |> Effects.task
