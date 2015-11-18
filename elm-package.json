@@ -4,7 +4,8 @@
     "repository": "https://github.com/bitamar/hi.git",
     "license": "BSD3",
     "source-directories": [
-        "src/elm"
+        "src/elm",
+        "src/vendor/elm-date-format"
     ],
     "exposed-modules": [],
     "dependencies": {

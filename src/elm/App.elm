@@ -2,6 +2,8 @@ module App where
 
 import Char
 import Config exposing (backendUrl)
+import Date exposing (..)
+import Date.Format as DF exposing (format)
 import Effects exposing (Effects, Never)
 import Html exposing (..)
 import Html.Attributes exposing (class, id)
@@ -57,7 +59,7 @@ initialModel =
 init : (Model, Effects Action)
 init =
   ( initialModel
-  , tick 1
+  , Effects.batch [getDate, tick]
   )
 
 pincodeLength = 4
@@ -113,21 +115,23 @@ update action model =
         )
 
     SetDate time ->
-      ( { model
-        | tickStatus <- Ready
-        , date <- Just time
-        }
-      , Effects.none
-      )
+        ( { model
+          | tickStatus <- Ready
+          , date <- Just time
+          }
+        , Effects.none
+        )
 
     Tick ->
       let
         effects =
-          if model.tickStatus == Waiting
-            then Effects.batch [ getDate, tick]
+          if model.tickStatus == Ready
+            then Effects.batch [ getDate, tick ]
             else Effects.none
       in
-        (model, effects)
+        ( { model | tickStatus <- Waiting }
+        , effects
+        )
 
     UpdateDataFromServer result ->
       case result of
@@ -219,6 +223,29 @@ view address model =
     clockIcon =
       i [ class "fa fa-clock-o icon" ] []
 
+
+    dateString =
+      case model.date of
+        Just time ->
+          let
+            date =
+              Date.fromTime time
+          in
+
+            DF.format "%A, %d %B, %Y" date
+        Nothing -> ""
+
+    timeString =
+      case model.date of
+        Just time ->
+          let
+            date =
+              Date.fromTime time
+          in
+
+            DF.format "%H:%M" date
+        Nothing -> ""
+
     date =
       div
         [ class "col-xs-5 main-header info text-center" ]
@@ -226,11 +253,11 @@ view address model =
             []
             [ span
                 []
-                [ text "Thursday, November 12, 2015" ]
+                [ text dateString ]
             , span
                 [ class "time "]
                 [ clockIcon
-                , span [] [text "13:25"]
+                , span [] [text timeString ]
                 ]
             ]
         ]
@@ -314,8 +341,8 @@ getDate : Effects Action
 getDate =
   Task.map SetDate getCurrentTime |> Effects.task
 
-tick : Int -> Action -> Effects Action
-tick seconds action =
-  Task.sleep (seconds * Time.second)
-    |> Task.map (\_ -> action)
+tick : Effects Action
+tick =
+  Task.sleep (1 * Time.second)
+    |> Task.map (\_ -> Tick)
     |> Effects.task
