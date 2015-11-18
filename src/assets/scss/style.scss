@@ -5,8 +5,7 @@
 // https://www.google.co.il/search?q=abstract+blur+background&espv=2&biw=1920&bih=1094&source=lnms&tbm=isch&sa=X&ved=0CAYQ_AUoAWoVChMI0p60mbuKyQIVTNsaCh0PugO8#imgrc=_
 
 html {
-  // @todo: Improve the location of the images.
-  background: url('/bg.jpg') no-repeat center center fixed;
+  background: url('../images/bg.jpg') no-repeat center center fixed;
   -webkit-background-size: cover;
   -moz-background-size: cover;
   -o-background-size: cover;
@@ -14,14 +13,10 @@ html {
 }
 
 body {
+  font-weight: lighter;
   font-size: 18px;
   font-family: 'Roboto Condensed', arial, sans-serif;
   background-color: transparent;
-}
-
-h4,
-body {
-  font-weight: lighter;
 }
 
 .light-border {
@@ -138,7 +133,7 @@ body {
       line-height: 39px;
       color: $digit;
       font-size: 22px;
-      font-weight: bold;
+      font-weight: 500;
 
       &.-active {
         background: rgba(255, 255, 255, 0.11);
@@ -254,12 +249,11 @@ body {
     height: 79px;
     margin: 7px 7px;
     font-size: 30px;
-    font-weight: 700;
+    font-weight: 500;
     color: $digit;
     @include border-radius(13px);
     @include text-shadow(1px 2px 2px rgba(35, 35, 35, 0.27));
     @include box-shadow(0 0 7px 0 rgba(0, 0, 0, 0.11));
-
     border: none;
     outline: none;
     background: rgba(255, 255, 255, 0.1);
@@ -309,66 +303,72 @@ body {
   border-left: 1px solid $border-dark;
   padding: 30px 40px 50px 40px;
 
-  .wrapper {
+  .main {
     @include opacity(0.0);
-    padding: 15px;
-    border: 1px solid rgba(0, 0, 0, 0.1);
-    background: $soft-bg;
-    @include border-radius(3px);
-    @include box-shadow(0 0 7px 0 rgba(0, 0, 0, 0.06));
     @include transition(0.8s ease-in-out opacity);
 
     &.-active {
       @include opacity(1.0);
     }
 
-    .message {
-      position: relative;
-      padding: 8px 8px 8px 48px;
-      font-size: 20px;
-      border: 1px solid rgba(0, 0, 0, 0.17);
+    .symbol {
+      color: rgba(0, 0, 0, 0.32);
+      @include text-shadow(1px 2px 2px rgba(255, 255, 255, 0.1));
+      font-size: 360px;
+    }
+
+    .wrapper {
+      padding: 15px;
+      border: 1px solid rgba(0, 0, 0, 0.1);
+      background: $soft-bg;
       @include border-radius(3px);
-      @extend .soft-shadow;
+      @include box-shadow(0 0 7px 0 rgba(0, 0, 0, 0.06));
 
-      &:after {
-        content: "";
-        position: absolute;
-        left: 40px;
-        top: 0;
-        height: 100%;
-        width: 1px;
-        background: rgba(0, 0, 0, 0.11);
-      }
+      .message {
+        position: relative;
+        padding: 8px 8px 8px 48px;
+        font-size: 20px;
+        border: 1px solid rgba(0, 0, 0, 0.17);
+        @include border-radius(3px);
+        @extend .soft-shadow;
 
-      &.-error {
-        background: $orange;
-      }
-
-      &.-success {
-
-        &.-in {
-          background: $green;
+        &:after {
+          content: "";
+          position: absolute;
+          left: 40px;
+          top: 0;
+          height: 100%;
+          width: 1px;
+          background: rgba(0, 0, 0, 0.11);
         }
 
-        &.-out {
-          background: $blue;
+        &.-error {
+          background: $orange;
         }
-      }
 
-      > .icon {
-        position: absolute;
-        left: 10px;
-        top: 12px;
-      }
+        &.-success {
 
-      > .symbol {
-        position: absolute;
-        left: 105px;
-        top: 72px;
-        color: rgba(0, 0, 0, 0.32);
-        @include text-shadow(1px 2px 2px rgba(255, 255, 255, 0.1));
-        font-size: 360px;
+          &.-in {
+            background: $green;
+          }
+
+          &.-out {
+            background: $blue;
+          }
+        }
+
+        .icon {
+          position: absolute;
+          left: 10px;
+          top: 12px;
+        }
       }
     }
   }
 }
+
+
+
+
+
+

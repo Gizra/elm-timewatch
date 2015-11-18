@@ -94,7 +94,7 @@ gulp.task("fonts", function () {
 
 // Copy index.html and CNAME files to the "serve" directory
 gulp.task("copy:dev", ["copy:bower"], function () {
-  return gulp.src(["src/index.html", "src/CNAME", "src/js/**/*", "src/assets/images/**/*"])
+  return gulp.src(["src/index.html", "src/CNAME"])
     .pipe(gulp.dest("serve"))
     .pipe($.size({ title: "index.html & CNAME" }))
 });
@@ -108,7 +108,7 @@ gulp.task("copy:bower", function () {
 
 // Copy images.
 gulp.task("copy:images", function () {
-  return gulp.src([])
+  return gulp.src("src/assets/images/**/*")
     .pipe(gulp.dest("serve/assets/images"))
     .pipe($.size({ title: "Assets images" }))
 });
@@ -184,7 +184,7 @@ gulp.task('elm', ['elm-init'], function(){
 // BrowserSync will serve our site on a local server for us and other devices to use
 // It will also autoreload across all devices as well as keep the viewport synchronized
 // between them.
-gulp.task("serve:dev", ["build"], function () {
+gulp.task("serve:dev", ["build", "copy:images"], function () {
   bs = browserSync({
     notify: true,
     // tunnel: "",
@@ -202,6 +202,7 @@ gulp.task("watch", function () {
   gulp.watch(["src/index.html", "src/js/**/*.js"], ["copy:dev", reload]);
   gulp.watch(["src/elm/*.elm"], ["elm", "copy:dev", reload]);
   gulp.watch(["src/assets/scss/**/*.scss"], ["styles", "copy:dev", reload]);
+  gulp.watch(["src/assets/images/**/*"], ["copy:images", reload]);
 });
 
 // Serve the site after optimizations to see that everything looks fine
