@@ -204,10 +204,8 @@ view address model =
                 [ clockIcon
                 , span [] [text "13:25"]
                 ]
-
             ]
         ]
-
   in
     div
       [ class "container"]
