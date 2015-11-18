@@ -174,6 +174,9 @@ view address model =
         [ class "code clearfix" ]
         [ simpleDiv "item icon fa fa-lock "
         , simpleDiv "item pin"
+        , simpleDiv "item pin"
+        , simpleDiv "item pin"
+        , simpleDiv "item pin"
         , simpleDiv "item icon -dynamic-icon"
         ]
       ]
