@@ -229,7 +229,7 @@ view address model =
       [ div
         [ class "code clearfix" ]
         [ simpleDiv "item icon fa fa-lock"
-        , span [] ( List.map pincodeText [0..3] )
+        , span [] (List.map pincodeText [0..3])
         , simpleDiv "item icon -dynamic-icon"
         ]
       ]
