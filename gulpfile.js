@@ -184,7 +184,7 @@ gulp.task('elm', ['elm-init'], function(){
 // BrowserSync will serve our site on a local server for us and other devices to use
 // It will also autoreload across all devices as well as keep the viewport synchronized
 // between them.
-gulp.task("serve:dev", ["build", "copy:images"], function () {
+gulp.task("serve:dev", ["build"], function () {
   bs = browserSync({
     notify: true,
     // tunnel: "",
@@ -192,6 +192,7 @@ gulp.task("serve:dev", ["build", "copy:images"], function () {
       baseDir: "serve"
     }
   });
+    gulp.start("copy:images");
 });
 
 
