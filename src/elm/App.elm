@@ -1,7 +1,7 @@
 module App where
 
 import Char
-import Config exposing (backendUrl)
+import Config exposing (backendUrl, accessToken)
 import Date exposing (..)
 import Date.Format as DF exposing (format)
 import Effects exposing (Effects, Never)
@@ -108,12 +108,11 @@ update action model =
 
     SubmitCode ->
       let
-        url : String
         url = Config.backendUrl ++ "/api/v1.0/session"
 
       in
         ( { model | status <- Fetching }
-        , getJson url model.pincode
+        , getJson url Config.accessToken model.pincode
         )
 
     SetDate time ->
@@ -305,11 +304,11 @@ viewMessage message =
 
 -- EFFECTS
 
-getJson : String -> String -> Effects Action
-getJson url pincode =
+getJson : String -> String -> String -> Effects Action
+getJson url accessToken pincode =
   Http.send Http.defaultSettings
     { verb = "POST"
-    , headers = [ ("access-token", "stF0R_j4DTYlpycjoXCCH0zezfKBJYq1sx_ULQFsYy8") ]
+    , headers = [ ("access-token", accessToken) ]
     , url = url
     , body = ( Http.string <| dataToJson pincode )
     }
