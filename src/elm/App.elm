@@ -36,7 +36,8 @@ type TickStatus = Ready | Waiting
 
 type alias Response =
   { employee : String
-  , action : String
+  , start : Int
+  , end : Maybe Int
   }
 
 type alias Model =
@@ -108,7 +109,7 @@ update action model =
 
     SubmitCode ->
       let
-        url = Config.backendUrl ++ "/api/v1.0/session"
+        url = Config.backendUrl ++ "/api/v1.0/timewatch-punch"
 
       in
         ( { model | status <- Fetching }
@@ -138,7 +139,16 @@ update action model =
       case result of
         Ok response ->
           let
-            message = response.employee ++ " " ++ response.action
+            greeting =
+              case response.end of
+                -- When the session has no end date, it means a session was
+                -- opened.
+                Nothing -> "Hi"
+
+                -- When the end date exist, it means the session was closed.
+                Just int -> "Bye"
+
+            message = greeting ++ " " ++ response.employee
           in
             ( { model
               | status <- Fetched
@@ -326,9 +336,10 @@ dataToJson code =
 decodeResponse : Json.Decoder Response
 decodeResponse =
   Json.at ["data"]
-    <| Json.object2 Response
+    <| Json.object3 Response
       ("employee" := Json.string)
-      ("action" := Json.string)
+      ("start" := Json.int)
+      (Json.maybe ("end" := Json.int))
 
 
 getDate : Effects Action
