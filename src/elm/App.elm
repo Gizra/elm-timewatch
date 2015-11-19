@@ -201,12 +201,12 @@ view address model =
       let
         className =
           case model.connected of
-           False -> "-off"
-           True -> "-on"
+            False -> "-off"
+            True -> "-on"
 
       in
         div
-          [ class "col-xs-2 main-header led text-center"]
+          [ class "col-xs-2 main-header led text-center" ]
           [ span [ class <| "light " ++ className ] []]
 
 
@@ -259,12 +259,12 @@ view address model =
         [ class "col-xs-5 main-header info text-center" ]
         [span [][ text dateString ]
         , span
-          [ class "time"]
+          [ class "time" ]
           [ clockIcon , span [] [text timeString ] ]
         ]
   in
     div
-      [ class "container"]
+      [ class "container" ]
       [ div
           [ class "row dashboard" ]
           [ pincode
