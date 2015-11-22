@@ -292,8 +292,33 @@ view address model =
           [ span [][ text dateString ]
           , span
                 [ class "time" ]
-                [ clockIcon , span [] [text timeString ] ]
+                [ clockIcon , span [] [ text timeString ] ]
           ]
+
+
+    numberPad =
+      div [ class "col-xs-5 text-center" ] []
+
+    view =
+      div
+          [ class "col-xs-7 view" ]
+          [ div
+              [ class "main -active" ]
+              [ div
+                  [ class "wrapper" ]
+                  [ div
+                      [ class "message -success -in" ]
+                      [ span
+                          []
+                          [ i [ class "fa fa-check icon" ] []
+                            , text "Hi yaron good morning! and have a nice day :)"
+                          ]
+                      ]
+                  ]
+              ]
+          ]
+
+
   in
     div
         [ class "container" ]
@@ -302,6 +327,8 @@ view address model =
             [ pincode
               , date
               , ledLight
+              , numberPad
+              , view
             ]
         , viewMainContent address model
         ]
