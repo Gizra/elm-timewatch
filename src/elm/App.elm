@@ -234,14 +234,14 @@ view address model =
 
     pincode =
       div
-      [ class "col-xs-5 main-header pin-code text-center" ]
-      [ div
-        [ class "code clearfix" ]
-        [ simpleDiv "item icon fa fa-lock"
-        , span [] (List.map pincodeText [0..3])
-        , simpleDiv "item icon -dynamic-icon"
-        ]
-      ]
+          [ class "col-xs-5 main-header pin-code text-center" ]
+          [ div
+              [ class "code clearfix" ]
+              [ simpleDiv "item icon fa fa-lock"
+                , span [] ( List.map pincodeText [0..3] )
+                , simpleDiv "item icon -dynamic-icon"
+              ]
+          ]
 
 
     clockIcon =
@@ -266,23 +266,23 @@ view address model =
 
     date =
       div
-        [ class "col-xs-5 main-header info text-center" ]
-        [span [][ text dateString ]
-        , span
-          [ class "time" ]
-          [ clockIcon , span [] [text timeString ] ]
-        ]
+          [ class "col-xs-5 main-header info text-center" ]
+          [ span [][ text dateString ]
+          , span
+                [ class "time" ]
+                [ clockIcon , span [] [text timeString ] ]
+          ]
   in
     div
-      [ class "container" ]
-      [ div
-          [ class "row dashboard" ]
-          [ pincode
-          , date
-          , ledLight
-          ]
-      , viewMainContent address model
-      ]
+        [ class "container" ]
+        [ div
+            [ class "row dashboard" ]
+            [ pincode
+              , date
+              , ledLight
+            ]
+        , viewMainContent address model
+        ]
 
 
 viewMainContent : Signal.Address Action -> Model -> Html
