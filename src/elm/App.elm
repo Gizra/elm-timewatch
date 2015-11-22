@@ -232,14 +232,27 @@ view address model =
         div [ class  "item pin" ] [ text text']
 
 
+    dynamicIcon =
+      let
+        className =
+          "fa-circle-o-notch fa-spin"
+          -- "fa-check -success -in"
+          -- "fa-check -success -out"
+          -- "fa-exclamation-triangle -error"
+
+
+      in
+      i [ class  <| "fa " ++ className ] []
+
+
     pincode =
       div
       [ class "col-xs-5 main-header pin-code text-center" ]
       [ div
         [ class "code clearfix" ]
         [ simpleDiv "item icon fa fa-lock"
-        , span [] (List.map pincodeText [0..3])
-        , simpleDiv "item icon -dynamic-icon"
+        , span [] (List.map pincodeText [0..3] )
+        , div [ class "item icon -dynamic-icon" ] [ dynamicIcon ]
         ]
       ]
 
