@@ -1,7 +1,7 @@
 {
     "version": "0.0.1",
     "summary": "Work attendance clock client.",
-    "repository": "https://github.com/bitamar/hi.git",
+    "repository": "https://github.com/Gizra/elm-timewatch.git",
     "license": "BSD3",
     "source-directories": [
         "src/elm"

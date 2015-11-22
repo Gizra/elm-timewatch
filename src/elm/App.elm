@@ -29,10 +29,12 @@ type Message =
 type Status =
   Init
   | Fetching
-  | Fetched String
+  | Fetched UserAction
   | HttpError Http.Error
 
 type TickStatus = Ready | Waiting
+
+type UserAction = Enter | Leave
 
 type alias Response =
   { employee : String
@@ -143,14 +145,14 @@ update action model =
               case response.end of
                 -- When the session has no end date, it means a session was
                 -- opened.
-                Nothing -> "Enter"
+                Nothing -> Enter
 
                 -- When the end date exist, it means the session was closed.
-                Just int -> "Left"
+                Just int -> Leave
 
 
             greeting =
-              if operation == "Enter" then "Hi" else "Bye"
+              if operation == Enter then "Hi" else "Bye"
 
 
             message = greeting ++ " " ++ response.employee
@@ -244,8 +246,8 @@ view address model =
           case model.status of
             Init -> ""
             Fetching -> "fa-circle-o-notch fa-spin"
-            Fetched "Enter" -> "fa-check -success -in"
-            Fetched "Left" -> "fa-check -success -out"
+            Fetched Enter -> "fa-check -success -in"
+            Fetched Leave -> "fa-check -success -out"
             HttpError error -> "fa-exclamation-triangle -error"
 
       in
@@ -253,15 +255,13 @@ view address model =
 
 
     pincode =
-      div
-      [ class "col-xs-5 main-header pin-code text-center" ]
-      [ div
-        [ class "code clearfix" ]
-        [ simpleDiv "item icon fa fa-lock"
-        , span [] (List.map pincodeText [0..3] )
-        , div [ class "item icon -dynamic-icon" ] [ dynamicIcon ]
-        ]
-      ]
+      div [ class "col-xs-5 main-header pin-code text-center" ]
+          [ div [ class "code clearfix" ]
+              [ simpleDiv "item icon fa fa-lock"
+              , span [] (List.map pincodeText [0..3] )
+              , div [ class "item icon -dynamic-icon" ] [ dynamicIcon ]
+              ]
+          ]
 
 
     clockIcon =
