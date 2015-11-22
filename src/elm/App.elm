@@ -299,22 +299,47 @@ view address model =
     numberPad =
       div [ class "col-xs-5 text-center" ] []
 
+
+    -- Adding a "class" to toggle the view display (hide/show).
+    mainViewClass =
+      let
+        className = "-active"
+
+      in
+        case model.status of
+          Fetched Enter -> className
+          Fetched Leave -> className
+          HttpError error -> className
+          _ -> ""
+
+
+    responseMessage =
+      let
+        className =
+          case model.status of
+            Fetched Enter -> "-success -in"
+            Fetched Leave -> "-success -out"
+            HttpError error -> "-error"
+            _ -> ""
+
+      in
+        div
+            [ class <| "message -success " ++ className]
+            [ span
+                []
+                [ i [ class "fa fa-check icon" ] []
+                  , text "Hi yaron good morning! and have a nice day :)"
+                ]
+            ]
+
     view =
       div
           [ class "col-xs-7 view" ]
           [ div
-              [ class "main -active" ]
+              [ class <| "main " ++ mainViewClass ]
               [ div
-                  [ class "wrapper" ]
-                  [ div
-                      [ class "message -success -in" ]
-                      [ span
-                          []
-                          [ i [ class "fa fa-check icon" ] []
-                            , text "Hi yaron good morning! and have a nice day :)"
-                          ]
-                      ]
-                  ]
+                  [ class "wrapper" ] [ responseMessage ]
+                  , div [ class "text-center" ] [ i [ class "symbol fa-4x fa fa-sign-out"] [] ]
               ]
           ]
 
