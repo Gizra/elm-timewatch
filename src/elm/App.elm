@@ -322,15 +322,20 @@ view address model =
             HttpError error -> "-error"
             _ -> ""
 
+        icon =
+          case model.status of
+            HttpError error ->
+              i [ class "fa fa-exclamation-triangle icon" ] []
+
+            _ ->
+              i [ class "fa fa-check icon" ] []
+
+
+
       in
         div
-            [ class <| "message -success " ++ className]
-            [ span
-                []
-                [ i [ class "fa fa-check icon" ] []
-                  , text "Hi yaron good morning! and have a nice day :)"
-                ]
-            ]
+            [ class <| "message " ++ className]
+            [ span [] [ icon , text "Hi yaron good morning! and have a nice day :)" ] ]
 
     view =
       div
