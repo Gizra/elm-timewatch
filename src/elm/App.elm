@@ -29,7 +29,7 @@ type Message =
 type Status =
   Init
   | Fetching
-  | Fetched
+  | Fetched String
   | HttpError Http.Error
 
 type TickStatus = Ready | Waiting
@@ -139,19 +139,25 @@ update action model =
       case result of
         Ok response ->
           let
-            greeting =
+            operation =
               case response.end of
                 -- When the session has no end date, it means a session was
                 -- opened.
-                Nothing -> "Hi"
+                Nothing -> "Enter"
 
                 -- When the end date exist, it means the session was closed.
-                Just int -> "Bye"
+                Just int -> "Left"
+
+
+            greeting =
+              if operation == "Enter" then "Hi" else "Bye"
+
 
             message = greeting ++ " " ++ response.employee
+
           in
             ( { model
-              | status <- Fetched
+              | status <- Fetched operation
               , pincode <- ""
               }
             , Task.succeed (SetMessage (Success message)) |> Effects.task
@@ -235,11 +241,12 @@ view address model =
     dynamicIcon =
       let
         className =
-          "fa-circle-o-notch fa-spin"
-          -- "fa-check -success -in"
-          -- "fa-check -success -out"
-          -- "fa-exclamation-triangle -error"
-
+          case model.status of
+            Init -> ""
+            Fetching -> "fa-circle-o-notch fa-spin"
+            Fetched "Enter" -> "fa-check -success -in"
+            Fetched "Left" -> "fa-check -success -out"
+            HttpError error -> "fa-exclamation-triangle -error"
 
       in
       i [ class  <| "fa " ++ className ] []
