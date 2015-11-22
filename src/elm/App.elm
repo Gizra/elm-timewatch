@@ -240,7 +240,7 @@ view address model =
         div [ class  "item pin" ] [ text text']
 
 
-    dynamicIcon =
+    icon =
       let
         className =
           case model.status of
@@ -251,15 +251,17 @@ view address model =
             HttpError error -> "fa-exclamation-triangle -error"
 
       in
-      i [ class  <| "fa " ++ className ] []
+        i [ class  <| "fa " ++ className ] []
 
 
     pincode =
-      div [ class "col-xs-5 main-header pin-code text-center" ]
-          [ div [ class "code clearfix" ]
+      div
+          [ class "col-xs-5 main-header pin-code text-center" ]
+          [ div
+              [ class "code clearfix" ]
               [ simpleDiv "item icon fa fa-lock"
-              , span [] (List.map pincodeText [0..3] )
-              , div [ class "item icon -dynamic-icon" ] [ dynamicIcon ]
+              , span [] ( List.map pincodeText [0..3] )
+              , div [ class "item icon -dynamic-icon" ] [ icon ]
               ]
           ]
 
