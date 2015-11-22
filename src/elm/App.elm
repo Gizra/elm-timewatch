@@ -322,20 +322,37 @@ view address model =
             HttpError error -> "-error"
             _ -> ""
 
+
         icon =
           case model.status of
             HttpError error ->
               i [ class "fa fa-exclamation-triangle icon" ] []
-
             _ ->
               i [ class "fa fa-check icon" ] []
 
+
+        message =
+          case model.message of
+            Error msg -> msg
+            Success msg -> msg
+            _ -> ""
 
 
       in
         div
             [ class <| "message " ++ className]
-            [ span [] [ icon , text "Hi yaron good morning! and have a nice day :)" ] ]
+            [ span [] [ icon , text message ] ]
+
+
+    actionLogo =
+      case model.status of
+        Fetched Enter ->
+          i [ class "symbol fa-4x fa fa-sign-in"] []
+        Fetched Leave ->
+          i [ class "symbol fa-4x fa fa-sign-out"] []
+        _ ->
+          i [] []
+
 
     view =
       div
@@ -344,7 +361,7 @@ view address model =
               [ class <| "main " ++ mainViewClass ]
               [ div
                   [ class "wrapper" ] [ responseMessage ]
-                  , div [ class "text-center" ] [ i [ class "symbol fa-4x fa fa-sign-out"] [] ]
+                  , div [ class "text-center" ] [ actionLogo ]
               ]
           ]
 
