@@ -1,3 +1,4 @@
+// Generated on 2015-05-04 using generator-jekyllized 0.7.3
 "use strict";
 
 var gulp = require("gulp");
@@ -12,6 +13,8 @@ var del = require("del");
 // BrowserSync isn"t a gulp package, and needs to be loaded manually
 var browserSync = require("browser-sync");
 
+var compass = require('gulp-compass');
+
 var elm  = require('gulp-elm');
 
 var fs = require('fs');
@@ -25,6 +28,8 @@ var plumber = require("gulp-plumber");
 var reload = browserSync.reload;
 // And define a variable that BrowserSync uses in its function
 var bs;
+
+var wiredep = require('wiredep').stream;
 
 // Deletes the directory that is used to serve the site during development
 gulp.task("clean:dev", function(cb) {
@@ -43,7 +48,11 @@ gulp.task("styles", function () {
   // Looks at the style.scss file for what to include and creates a style.css file
   return gulp.src("src/assets/scss/style.scss")
     .pipe(plumber())
-    .pipe($.sass())
+    .pipe(compass({
+      css: 'serve/assets/stylesheets',
+      sass: 'src/assets/scss',
+      image: 'src/assets/images'
+    }))
     .on('error', function(err){
       browserSync.notify("SASS error");
 
@@ -56,10 +65,6 @@ gulp.task("styles", function () {
       // No need to continue processing.
       this.emit('end');
     })
-    // AutoPrefix your CSS so it works between browsers
-    .pipe($.autoprefixer("last 1 version", { cascade: true }))
-    // Directory your CSS file goes to
-    .pipe(gulp.dest("serve/assets/stylesheets/"))
     // Outputs the size of the CSS file
     .pipe($.size({title: "styles"}))
     // Injects the CSS changes to your browser since Jekyll doesn"t rebuild the CSS
@@ -88,16 +93,37 @@ gulp.task("fonts", function () {
 });
 
 // Copy index.html and CNAME files to the "serve" directory
-gulp.task("copy:dev", function () {
+gulp.task("copy:dev", ["copy:bower"], function () {
   return gulp.src(["src/index.html", "src/CNAME"])
     .pipe(gulp.dest("serve"))
     .pipe($.size({ title: "index.html & CNAME" }))
 });
 
+// Copy bower.
+gulp.task("copy:bower", function () {
+  return gulp.src(["bower_components/**/*"])
+    .pipe(gulp.dest("serve/bower_components"))
+    .pipe($.size({ title: "Bower" }))
+});
+
+// Copy images.
+gulp.task("copy:images", function () {
+  return gulp.src("src/assets/images/**/*")
+    .pipe(gulp.dest("serve/assets/images"))
+    .pipe($.size({ title: "Assets images" }))
+});
+
+
 gulp.task("cname", function () {
   return gulp.src(["serve/CNAME"])
     .pipe(gulp.dest("dist"))
     .pipe($.size({ title: "CNAME" }))
+});
+
+gulp.task('bower', function () {
+  gulp.src("src/index.html")
+    .pipe(wiredep())
+    .pipe(gulp.dest("serve"));
 });
 
 
@@ -135,7 +161,7 @@ gulp.task("minify", ["styles"], function () {
 gulp.task("deploy", [], function () {
   // Deploys your optimized site, you can change the settings in the html task if you want to
   return gulp.src("dist/**/*")
-    .pipe($.ghPages({branch: "gh-pages"}));
+    .pipe($.ghPages({branch: "gh-pages", cacheDir: ".publish"}));
 });
 
 gulp.task('elm-init', elm.init);
@@ -166,6 +192,7 @@ gulp.task("serve:dev", ["build"], function () {
       baseDir: "serve"
     }
   });
+    gulp.start("copy:images");
 });
 
 
@@ -173,10 +200,10 @@ gulp.task("serve:dev", ["build"], function () {
 // reload the website accordingly. Update or add other files you need to be watched.
 gulp.task("watch", function () {
   // We need to copy dev, so index.html may be replaced by error messages.
+  gulp.watch(["src/index.html", "src/js/**/*.js"], ["copy:dev", reload]);
   gulp.watch(["src/elm/*.elm"], ["elm", "copy:dev", reload]);
   gulp.watch(["src/assets/scss/**/*.scss"], ["styles", "copy:dev", reload]);
-  // Watch JS folder
-  gulp.watch(["src/index.html", "src/js/**/*.js"], ["copy:dev", reload]);
+  gulp.watch(["src/assets/images/**/*"], ["copy:images", reload]);
 });
 
 // Serve the site after optimizations to see that everything looks fine
@@ -193,8 +220,8 @@ gulp.task("serve:prod", function () {
 // Default task, run when just writing "gulp" in the terminal
 gulp.task("default", ["serve:dev", "watch"]);
 
-// Builds the site but doesn't serve it to you.
-// Delete should run and complete before other tasks.
+// Builds the site but doesnt serve it to you
+// @todo: Add "bower" here
 gulp.task("build", gulpSequence("clean:dev", ["styles", "copy:dev", "elm"]));
 
 // Builds your site with the "build" command and then runs all the optimizations on

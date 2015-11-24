@@ -1,6 +1,9 @@
 module App where
 
-import Config exposing (backendUrl)
+import Char
+import Config exposing (backendUrl, accessToken)
+import Date exposing (..)
+import Date.Format as DF exposing (format)
 import Effects exposing (Effects, Never)
 import Html exposing (..)
 import Html.Attributes exposing (class, id)
@@ -10,7 +13,9 @@ import Json.Decode as Json exposing ((:=))
 import Json.Encode as JE
 import String exposing (length)
 import Task
-import Char
+import TaskTutorial exposing (getCurrentTime)
+import Time exposing (second)
+
 import Debug
 
 
@@ -24,18 +29,26 @@ type Message =
 type Status =
   Init
   | Fetching
-  | Fetched
+  | Fetched UserAction
   | HttpError Http.Error
+
+type TickStatus = Ready | Waiting
+
+type UserAction = Enter | Leave
 
 type alias Response =
   { employee : String
-  , action : String
+  , start : Int
+  , end : Maybe Int
   }
 
 type alias Model =
   { pincode : String
   , status : Status
   , message : Message
+  , tickStatus : TickStatus
+  , date : Maybe Time.Time
+  , connected : Bool
   }
 
 initialModel : Model
@@ -43,12 +56,15 @@ initialModel =
   { pincode = ""
   , status = Init
   , message = Empty
+  , tickStatus = Ready
+  , date = Nothing
+  , connected = False
   }
 
 init : (Model, Effects Action)
 init =
   ( initialModel
-  , Effects.none
+  , Effects.batch [getDate, tick]
   )
 
 pincodeLength = 4
@@ -58,10 +74,13 @@ pincodeLength = 4
 
 type Action
   = AddDigit Int
-  | SubmitCode
-  | UpdateDataFromServer (Result Http.Error Response)
-  | SetMessage Message
   | Reset
+  | SetDate Time.Time
+  | SetMessage Message
+  | SubmitCode
+  | Tick
+  | UpdateDataFromServer (Result Http.Error Response)
+
 
 update : Action -> Model -> (Model, Effects Action)
 update action model =
@@ -84,7 +103,6 @@ update action model =
       in
         ( { model
           | pincode <- pincode'
-          , message <- Empty
           , status <- Init
           }
         , effects'
@@ -92,23 +110,55 @@ update action model =
 
     SubmitCode ->
       let
-        url : String
-        url = Config.backendUrl ++ "/api/v1.0/session"
+        url = Config.backendUrl ++ "/api/v1.0/timewatch-punch"
 
       in
         ( { model | status <- Fetching }
-        , getJson url model.pincode
+        , getJson url Config.accessToken model.pincode
         )
 
+    SetDate time ->
+        ( { model
+          | tickStatus <- Ready
+          , date <- Just time
+          }
+        , Effects.none
+        )
+
+    Tick ->
+      let
+        effects =
+          if model.tickStatus == Ready
+            then Effects.batch [ getDate, tick ]
+            else Effects.none
+      in
+        ( { model | tickStatus <- Waiting }
+        , effects
+        )
 
     UpdateDataFromServer result ->
       case result of
         Ok response ->
           let
-            message = response.employee ++ " " ++ response.action
+            operation =
+              case response.end of
+                -- When the session has no end date, it means a session was
+                -- opened.
+                Nothing -> Enter
+
+                -- When the end date exist, it means the session was closed.
+                Just int -> Leave
+
+
+            greeting =
+              if operation == Enter then "Hi" else "Bye"
+
+
+            message = greeting ++ " " ++ response.employee
+
           in
             ( { model
-              | status <- Fetched
+              | status <- Fetched operation
               , pincode <- ""
               }
             , Task.succeed (SetMessage (Success message)) |> Effects.task
@@ -159,17 +209,200 @@ getErrorMessageFromHttpResponse error =
 
 view : Signal.Address Action -> Model -> Html
 view address model =
-  div
-    [ class "keypad" ]
-    [ div
-        [ class "preview" ]
-        ( List.map digitPreview (String.toList model.pincode) )
-    , div
-        [ class "number-buttons" ]
-        ( List.map (digitButton address) [0..9] |> List.reverse )
-    , (viewMessage model.message)
-    , div [ class "model-debug" ] [ text (toString model) ]
-    ]
+  let
+    digitButton digit =
+      button [ onClick address (AddDigit digit) ] [ text <| toString digit ]
+
+
+    ledLight =
+      let
+        className =
+          case model.connected of
+            False -> "-off"
+            True -> "-on"
+
+      in
+        div
+          [ class "col-xs-2 main-header led text-center" ]
+          [ span [ class <| "light " ++ className ] []]
+
+
+    simpleDiv class' =
+      div [ class  class' ] []
+
+
+    pincodeText delta =
+      let
+        text' =
+          String.slice delta (delta + 1) model.pincode
+      in
+        div [ class  "item pin" ] [ text text']
+
+
+    icon =
+      let
+        className =
+          case model.status of
+            Init -> ""
+            Fetching -> "fa-circle-o-notch fa-spin"
+            Fetched Enter -> "fa-check -success -in"
+            Fetched Leave -> "fa-check -success -out"
+            HttpError error -> "fa-exclamation-triangle -error"
+
+      in
+        i [ class  <| "fa " ++ className ] []
+
+
+    pincode =
+      div
+          [ class "col-xs-5 main-header pin-code text-center" ]
+          [ div
+              [ class "code clearfix" ]
+              [ simpleDiv "item icon fa fa-lock"
+                , span [] ( List.map pincodeText [0..3] )
+                , div [ class "item icon -dynamic-icon" ] [ icon ]
+              ]
+          ]
+
+
+    clockIcon =
+      i [ class "fa fa-clock-o icon" ] []
+
+
+    dateString =
+      case model.date of
+        Just time ->
+        Date.fromTime time |> DF.format "%A, %d %B, %Y"
+
+        Nothing -> ""
+
+
+    timeString =
+      case model.date of
+        Just time ->
+          Date.fromTime time |> DF.format " %H:%M"
+
+        Nothing -> ""
+
+
+    date =
+      div
+          [ class "col-xs-5 main-header info text-center" ]
+          [ span [][ text dateString ]
+          , span
+                [ class "time" ]
+                [ clockIcon , span [] [ text timeString ] ]
+          ]
+
+
+    message =
+      let
+        -- Adding a "class" to toggle the view display (hide/show).
+        visibilityClass =
+          if | model.status == Init -> ""
+             | model.status == Fetching -> ""
+             | otherwise -> "-active"
+
+
+        msgClass =
+          case model.status of
+            Fetched Enter ->
+              "-success -in"
+
+            Fetched Leave ->
+              "-success -out"
+
+            HttpError error ->
+              "-error"
+
+            _ -> ""
+
+
+        msgIcon =
+          case model.status of
+            HttpError error ->
+              i [ class "fa icon fa-exclamation-triangle" ] []
+
+            Init ->
+              i [] []
+
+            _ ->
+              i [ class "fa icon fa-check" ] []
+
+
+        msgText =
+          case model.message of
+            Error msg -> msg
+            Success msg -> msg
+            _ -> ""
+
+
+        actionIcon =
+          let
+            baseClass = "symbol fa-4x fa fa-sign"
+
+          in
+            case model.status of
+              Fetched Enter ->
+                i [ class <| baseClass ++ "-in" ] []
+
+              Fetched Leave ->
+                i [ class <| baseClass ++ "-out" ] []
+
+              _ ->
+                i [] []
+
+
+      in
+        div
+            [ class "col-xs-7 view" ]
+            [ div
+                [ class <| "main " ++ visibilityClass ]
+                [ div
+                    [ class "wrapper" ]
+                    [ div
+                        [ class <| "message " ++ msgClass ]
+                        [ span [] [ msgIcon , text msgText ] ]
+                    ]
+                , div [ class "text-center" ] [ actionIcon ]
+                ]
+            ]
+
+
+  in
+    div
+        [ class "container" ]
+        [ div
+            [ class "row dashboard" ]
+            [ pincode
+              , date
+              , ledLight
+              , div
+                  [ class "col-xs-5 text-center" ]
+                  [ span [] []
+                    , div [ class "numbers-pad" ] []
+                  ]
+              , message
+            ]
+        , viewMainContent address model
+        ]
+
+
+
+viewMainContent : Signal.Address Action -> Model -> Html
+viewMainContent address model =
+  let
+    digitButton digit =
+      button [ onClick address (AddDigit digit) ] [ text <| toString digit ]
+  in
+    div
+      [ class "keypad" ]
+      [ div
+          [ class "number-buttons" ]
+          ( List.map digitButton [0..9] |> List.reverse )
+      , (viewMessage model.message)
+      , div [ class "model-debug" ] [ text <| toString model ]
+      ]
 
 viewMessage : Message -> Html
 viewMessage message =
@@ -182,24 +415,14 @@ viewMessage message =
   in
     div [ id "status-message", class className ] [ text string ]
 
-digitButton : Signal.Address Action -> Int -> Html
-digitButton address digit =
-  button [ onClick address (AddDigit digit) ] [ text <| toString digit ]
-
-digitPreview : Char -> Html
-digitPreview digit =
-    -- TODO: Converting the char to int, to avoid the quotes when printing it.
-    -- Is there a proper way to do that?
-    div [ ] [ text <| toString <| (Char.toCode digit) - (Char.toCode '0') ]
-
 
 -- EFFECTS
 
-getJson : String -> String -> Effects Action
-getJson url pincode =
+getJson : String -> String -> String -> Effects Action
+getJson url accessToken pincode =
   Http.send Http.defaultSettings
     { verb = "POST"
-    , headers = [ ("access-token", "stF0R_j4DTYlpycjoXCCH0zezfKBJYq1sx_ULQFsYy8") ]
+    , headers = [ ("access-token", accessToken) ]
     , url = url
     , body = ( Http.string <| dataToJson pincode )
     }
@@ -217,6 +440,18 @@ dataToJson code =
 decodeResponse : Json.Decoder Response
 decodeResponse =
   Json.at ["data"]
-    <| Json.object2 Response
+    <| Json.object3 Response
       ("employee" := Json.string)
-      ("action" := Json.string)
+      ("start" := Json.int)
+      (Json.maybe ("end" := Json.int))
+
+
+getDate : Effects Action
+getDate =
+  Task.map SetDate getCurrentTime |> Effects.task
+
+tick : Effects Action
+tick =
+  Task.sleep (1 * Time.second)
+    |> Task.map (\_ -> Tick)
+    |> Effects.task

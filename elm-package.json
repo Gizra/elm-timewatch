@@ -1,11 +1,12 @@
 {
     "version": "0.0.1",
     "summary": "Work attendance clock client.",
-    "repository": "https://github.com/bitamar/hi.git",
+    "repository": "https://github.com/Gizra/elm-timewatch.git",
     "license": "BSD3",
     "source-directories": [
         "src/elm",
-        "src/vendor/elm-base64"
+        "src/vendor/elm-base64",
+        "src/vendor/elm-date-format"
     ],
     "exposed-modules": [],
     "dependencies": {
@@ -14,6 +15,7 @@
         "evancz/elm-effects": "2.0.0 <= v < 3.0.0",
         "evancz/elm-html": "4.0.1 <= v < 5.0.0",
         "evancz/elm-http": "1.0.0 <= v < 2.0.0",
+        "evancz/task-tutorial": "1.0.3 <= v < 2.0.0",
         "evancz/start-app": "2.0.0 <= v < 3.0.0"
     },
     "elm-version": "0.15.1 <= v < 0.16.0"

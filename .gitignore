@@ -8,3 +8,4 @@ dist
 # Compiled tests
 elm.js
 test.html
+.sass-cache
