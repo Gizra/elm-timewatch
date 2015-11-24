@@ -103,7 +103,6 @@ update action model =
       in
         ( { model
           | pincode <- pincode'
-          , message <- Empty
           , status <- Init
           }
         , effects'
@@ -306,13 +305,6 @@ view address model =
              | otherwise -> "-active"
 
 
-        -- Adding a "hidden" attribute to toggle the message (hide/show).
-        hidden' =
-          if | model.status == Init -> True
-             | model.status == Fetching -> True
-             | otherwise -> False
-
-
         msgClass =
           case model.status of
             Fetched Enter ->
@@ -365,7 +357,7 @@ view address model =
             [ div
                 [ class <| "main " ++ visibilityClass ]
                 [ div
-                    [ class "wrapper", hidden hidden' ]
+                    [ class "wrapper" ]
                     [ div
                         [ class <| "message " ++ msgClass ]
                         [ span [] [ msgIcon , text msgText ] ]
