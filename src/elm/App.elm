@@ -362,7 +362,6 @@ view address model =
                 i [] []
 
 
-
       in
         div
             [ class "col-xs-7 view" ]
