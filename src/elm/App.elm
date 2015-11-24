@@ -302,15 +302,9 @@ view address model =
 
     -- Adding a "class" to toggle the view display (hide/show).
     mainViewClass =
-      let
-        className = "-active"
-
-      in
-        case model.status of
-          Fetched Enter -> className
-          Fetched Leave -> className
-          HttpError error -> className
-          _ -> ""
+      if | model.status == Init -> ""
+         | model.status == Fetching -> ""
+         | otherwise -> "-active"
 
 
     responseMessage =
@@ -332,45 +326,47 @@ view address model =
         icon =
           case model.status of
             HttpError error ->
-              i [ class "fa fa-exclamation-triangle icon" ] []
+              i [ class "fa icon fa-exclamation-triangle" ] []
 
             _ ->
-              i [ class "fa fa-check icon" ] []
+              i [ class "fa icon fa-check" ] []
 
 
-        message =
+        msg =
           case model.message of
             Error msg -> msg
             Success msg -> msg
             _ -> ""
 
 
+        actionIcon =
+          let
+            baseClass = "symbol fa-4x fa fa-sign"
+
+          in
+            case model.status of
+              Fetched Enter ->
+                i [ class <| baseClass ++ "-in" ] []
+
+              Fetched Leave ->
+                i [ class <| baseClass ++ "-out" ] []
+
+              _ ->
+                i [] []
+
+
       in
-        div
-            [ class <| "message " ++ className]
-            [ span [] [ icon , text message ] ]
-
-
-    actionLogo =
-      case model.status of
-        Fetched Enter ->
-          i [ class "symbol fa-4x fa fa-sign-in"] []
-        Fetched Leave ->
-          i [ class "symbol fa-4x fa fa-sign-out"] []
-        _ ->
-          i [] []
-
-
-    view =
-      div
-          [ class "col-xs-7 view" ]
-          [ div
-              [ class <| "main " ++ mainViewClass ]
-              [ div
-                  [ class "wrapper" ] [ responseMessage ]
-                  , div [ class "text-center" ] [ actionLogo ]
-              ]
-          ]
+        span
+            []
+            [
+            div
+                [ class "wrapper" ]
+                [ div
+                    [ class <| "message " ++ className ]
+                    [ span [] [ icon , text msg ] ]
+                ]
+            , div [ class "text-center" ] [ actionIcon ]
+            ]
 
 
   in
@@ -382,10 +378,16 @@ view address model =
               , date
               , ledLight
               , numberPad
-              , view
+              , div
+                    [ class "col-xs-7 view" ]
+                    [ div
+                        [ class <| "main " ++ mainViewClass ]
+                        [ responseMessage ]
+                    ]
             ]
         , viewMainContent address model
         ]
+
 
 
 viewMainContent : Signal.Address Action -> Model -> Html
