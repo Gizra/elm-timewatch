@@ -29,10 +29,12 @@ type Message =
 type Status =
   Init
   | Fetching
-  | Fetched
+  | Fetched UserAction
   | HttpError Http.Error
 
 type TickStatus = Ready | Waiting
+
+type UserAction = Enter | Leave
 
 type alias Response =
   { employee : String
@@ -101,7 +103,6 @@ update action model =
       in
         ( { model
           | pincode <- pincode'
-          , message <- Empty
           , status <- Init
           }
         , effects'
@@ -139,19 +140,25 @@ update action model =
       case result of
         Ok response ->
           let
-            greeting =
+            operation =
               case response.end of
                 -- When the session has no end date, it means a session was
                 -- opened.
-                Nothing -> "Hi"
+                Nothing -> Enter
 
                 -- When the end date exist, it means the session was closed.
-                Just int -> "Bye"
+                Just int -> Leave
+
+
+            greeting =
+              if operation == Enter then "Hi" else "Bye"
+
 
             message = greeting ++ " " ++ response.employee
+
           in
             ( { model
-              | status <- Fetched
+              | status <- Fetched operation
               , pincode <- ""
               }
             , Task.succeed (SetMessage (Success message)) |> Effects.task
@@ -232,6 +239,20 @@ view address model =
         div [ class  "item pin" ] [ text text']
 
 
+    icon =
+      let
+        className =
+          case model.status of
+            Init -> ""
+            Fetching -> "fa-circle-o-notch fa-spin"
+            Fetched Enter -> "fa-check -success -in"
+            Fetched Leave -> "fa-check -success -out"
+            HttpError error -> "fa-exclamation-triangle -error"
+
+      in
+        i [ class  <| "fa " ++ className ] []
+
+
     pincode =
       div
           [ class "col-xs-5 main-header pin-code text-center" ]
@@ -239,7 +260,7 @@ view address model =
               [ class "code clearfix" ]
               [ simpleDiv "item icon fa fa-lock"
                 , span [] ( List.map pincodeText [0..3] )
-                , simpleDiv "item icon -dynamic-icon"
+                , div [ class "item icon -dynamic-icon" ] [ icon ]
               ]
           ]
 
@@ -270,8 +291,84 @@ view address model =
           [ span [][ text dateString ]
           , span
                 [ class "time" ]
-                [ clockIcon , span [] [text timeString ] ]
+                [ clockIcon , span [] [ text timeString ] ]
           ]
+
+
+    message =
+      let
+        -- Adding a "class" to toggle the view display (hide/show).
+        visibilityClass =
+          if | model.status == Init -> ""
+             | model.status == Fetching -> ""
+             | otherwise -> "-active"
+
+
+        msgClass =
+          case model.status of
+            Fetched Enter ->
+              "-success -in"
+
+            Fetched Leave ->
+              "-success -out"
+
+            HttpError error ->
+              "-error"
+
+            _ -> ""
+
+
+        msgIcon =
+          case model.status of
+            HttpError error ->
+              i [ class "fa icon fa-exclamation-triangle" ] []
+
+            Init ->
+              i [] []
+
+            _ ->
+              i [ class "fa icon fa-check" ] []
+
+
+        msgText =
+          case model.message of
+            Error msg -> msg
+            Success msg -> msg
+            _ -> ""
+
+
+        actionIcon =
+          let
+            baseClass = "symbol fa-4x fa fa-sign"
+
+          in
+            case model.status of
+              Fetched Enter ->
+                i [ class <| baseClass ++ "-in" ] []
+
+              Fetched Leave ->
+                i [ class <| baseClass ++ "-out" ] []
+
+              _ ->
+                i [] []
+
+
+      in
+        div
+            [ class "col-xs-7 view" ]
+            [ div
+                [ class <| "main " ++ visibilityClass ]
+                [ div
+                    [ class "wrapper" ]
+                    [ div
+                        [ class <| "message " ++ msgClass ]
+                        [ span [] [ msgIcon , text msgText ] ]
+                    ]
+                , div [ class "text-center" ] [ actionIcon ]
+                ]
+            ]
+
+
   in
     div
         [ class "container" ]
@@ -280,9 +377,16 @@ view address model =
             [ pincode
               , date
               , ledLight
+              , div
+                  [ class "col-xs-5 text-center" ]
+                  [ span [] []
+                    , div [ class "numbers-pad" ] []
+                  ]
+              , message
             ]
         , viewMainContent address model
         ]
+
 
 
 viewMainContent : Signal.Address Action -> Model -> Html
