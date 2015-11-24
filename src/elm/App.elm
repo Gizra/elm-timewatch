@@ -295,8 +295,7 @@ view address model =
           ]
 
 
-
-    responseMessage =
+    message =
       let
         -- Adding a "class" to toggle the view display (hide/show).
         visibilityClass =
@@ -375,8 +374,12 @@ view address model =
             [ pincode
               , date
               , ledLight
-              , div [ class "col-xs-5 text-center" ] []
-              , responseMessage
+              , div
+                  [ class "col-xs-5 text-center" ]
+                  [ span [] []
+                    , div [ class "numbers-pad" ] []
+                  ]
+              , message
             ]
         , viewMainContent address model
         ]
