@@ -6,7 +6,7 @@ import Date exposing (..)
 import Date.Format as DF exposing (format)
 import Effects exposing (Effects, Never)
 import Html exposing (..)
-import Html.Attributes exposing (class, id)
+import Html.Attributes exposing (class, id, hidden)
 import Html.Events exposing (onClick)
 import Http
 import Json.Decode as Json exposing ((:=))
@@ -301,10 +301,16 @@ view address model =
 
 
     -- Adding a "class" to toggle the view display (hide/show).
-    mainViewClass =
+    visibilityClass =
       if | model.status == Init -> ""
          | model.status == Fetching -> ""
          | otherwise -> "-active"
+
+
+    visibility =
+      if | model.status == Init -> True
+         | model.status == Fetching -> True
+         | otherwise -> False
 
 
     responseMessage =
@@ -360,7 +366,7 @@ view address model =
             []
             [
             div
-                [ class "wrapper" ]
+                [ class "wrapper", hidden visibility ]
                 [ div
                     [ class <| "message " ++ className ]
                     [ span [] [ icon , text msg ] ]
@@ -381,7 +387,7 @@ view address model =
               , div
                     [ class "col-xs-7 view" ]
                     [ div
-                        [ class <| "main " ++ mainViewClass ]
+                        [ class <| "main " ++ visibilityClass ]
                         [ responseMessage ]
                     ]
             ]
