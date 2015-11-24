@@ -323,6 +323,9 @@ view address model =
             HttpError error ->
               i [ class "fa icon fa-exclamation-triangle" ] []
 
+            Init ->
+              i [] []
+
             _ ->
               i [ class "fa icon fa-check" ] []
 
