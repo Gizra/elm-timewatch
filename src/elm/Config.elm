@@ -4,4 +4,4 @@ backendUrl : String
 backendUrl = "http://localhost/productivity/www"
 
 accessToken : String
-accessToken = "NCIUsh7K-iFfqZ46OQ8_RXZ2qvFy5mhYBbFqcNLTef4"
+accessToken = "iNP3aLho0fYT_mxgsd5ZrYXUcJh6i_Rku2sG6dY4G-k"

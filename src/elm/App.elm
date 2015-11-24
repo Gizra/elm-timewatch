@@ -103,7 +103,6 @@ update action model =
       in
         ( { model
           | pincode <- pincode'
-          , message <- Empty
           , status <- Init
           }
         , effects'
@@ -292,8 +291,84 @@ view address model =
           [ span [][ text dateString ]
           , span
                 [ class "time" ]
-                [ clockIcon , span [] [text timeString ] ]
+                [ clockIcon , span [] [ text timeString ] ]
           ]
+
+
+    message =
+      let
+        -- Adding a "class" to toggle the view display (hide/show).
+        visibilityClass =
+          if | model.status == Init -> ""
+             | model.status == Fetching -> ""
+             | otherwise -> "-active"
+
+
+        msgClass =
+          case model.status of
+            Fetched Enter ->
+              "-success -in"
+
+            Fetched Leave ->
+              "-success -out"
+
+            HttpError error ->
+              "-error"
+
+            _ -> ""
+
+
+        msgIcon =
+          case model.status of
+            HttpError error ->
+              i [ class "fa icon fa-exclamation-triangle" ] []
+
+            Init ->
+              i [] []
+
+            _ ->
+              i [ class "fa icon fa-check" ] []
+
+
+        msgText =
+          case model.message of
+            Error msg -> msg
+            Success msg -> msg
+            _ -> ""
+
+
+        actionIcon =
+          let
+            baseClass = "symbol fa-4x fa fa-sign"
+
+          in
+            case model.status of
+              Fetched Enter ->
+                i [ class <| baseClass ++ "-in" ] []
+
+              Fetched Leave ->
+                i [ class <| baseClass ++ "-out" ] []
+
+              _ ->
+                i [] []
+
+
+      in
+        div
+            [ class "col-xs-7 view" ]
+            [ div
+                [ class <| "main " ++ visibilityClass ]
+                [ div
+                    [ class "wrapper" ]
+                    [ div
+                        [ class <| "message " ++ msgClass ]
+                        [ span [] [ msgIcon , text msgText ] ]
+                    ]
+                , div [ class "text-center" ] [ actionIcon ]
+                ]
+            ]
+
+
   in
     div
         [ class "container" ]
@@ -302,9 +377,16 @@ view address model =
             [ pincode
               , date
               , ledLight
+              , div
+                  [ class "col-xs-5 text-center" ]
+                  [ span [] []
+                    , div [ class "numbers-pad" ] []
+                  ]
+              , message
             ]
         , viewMainContent address model
         ]
+
 
 
 viewMainContent : Signal.Address Action -> Model -> Html
