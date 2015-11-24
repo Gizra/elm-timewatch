@@ -300,22 +300,23 @@ view address model =
       div [ class "col-xs-5 text-center" ] []
 
 
-    -- Adding a "class" to toggle the view display (hide/show).
-    visibilityClass =
-      if | model.status == Init -> ""
-         | model.status == Fetching -> ""
-         | otherwise -> "-active"
-
-
-    visibility =
-      if | model.status == Init -> True
-         | model.status == Fetching -> True
-         | otherwise -> False
-
-
     responseMessage =
       let
-        className =
+        -- Adding a "class" to toggle the view display (hide/show).
+        visibilityClass =
+          if | model.status == Init -> ""
+             | model.status == Fetching -> ""
+             | otherwise -> "-active"
+
+
+        -- Adding a "hidden" attribute to toggle the message (hide/show).
+        hidden' =
+          if | model.status == Init -> True
+             | model.status == Fetching -> True
+             | otherwise -> False
+
+
+        msgClass =
           case model.status of
             Fetched Enter ->
               "-success -in"
@@ -329,7 +330,7 @@ view address model =
             _ -> ""
 
 
-        icon =
+        msgIcon =
           case model.status of
             HttpError error ->
               i [ class "fa icon fa-exclamation-triangle" ] []
@@ -338,7 +339,7 @@ view address model =
               i [ class "fa icon fa-check" ] []
 
 
-        msg =
+        msgText =
           case model.message of
             Error msg -> msg
             Success msg -> msg
@@ -361,17 +362,20 @@ view address model =
                 i [] []
 
 
+
       in
-        span
-            []
-            [
-            div
-                [ class "wrapper", hidden visibility ]
+        div
+            [ class "col-xs-7 view" ]
+            [ div
+                [ class <| "main " ++ visibilityClass ]
                 [ div
-                    [ class <| "message " ++ className ]
-                    [ span [] [ icon , text msg ] ]
+                    [ class "wrapper", hidden hidden' ]
+                    [ div
+                        [ class <| "message " ++ msgClass ]
+                        [ span [] [ msgIcon , text msgText ] ]
+                    ]
+                , div [ class "text-center" ] [ actionIcon ]
                 ]
-            , div [ class "text-center" ] [ actionIcon ]
             ]
 
 
@@ -384,12 +388,7 @@ view address model =
               , date
               , ledLight
               , numberPad
-              , div
-                    [ class "col-xs-7 view" ]
-                    [ div
-                        [ class <| "main " ++ visibilityClass ]
-                        [ responseMessage ]
-                    ]
+              , responseMessage
             ]
         , viewMainContent address model
         ]
