@@ -317,9 +317,15 @@ view address model =
       let
         className =
           case model.status of
-            Fetched Enter -> "-success -in"
-            Fetched Leave -> "-success -out"
-            HttpError error -> "-error"
+            Fetched Enter ->
+              "-success -in"
+
+            Fetched Leave ->
+              "-success -out"
+
+            HttpError error ->
+              "-error"
+
             _ -> ""
 
 
@@ -327,6 +333,7 @@ view address model =
           case model.status of
             HttpError error ->
               i [ class "fa fa-exclamation-triangle icon" ] []
+
             _ ->
               i [ class "fa fa-check icon" ] []
 
