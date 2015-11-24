@@ -296,9 +296,6 @@ view address model =
           ]
 
 
-    numberPad =
-      div [ class "col-xs-5 text-center" ] []
-
 
     responseMessage =
       let
@@ -386,7 +383,7 @@ view address model =
             [ pincode
               , date
               , ledLight
-              , numberPad
+              , div [ class "col-xs-5 text-center" ] []
               , responseMessage
             ]
         , viewMainContent address model
