@@ -6,7 +6,7 @@ import Date exposing (..)
 import Date.Format as DF exposing (format)
 import Effects exposing (Effects, Never)
 import Html exposing (..)
-import Html.Attributes exposing (class, id)
+import Html.Attributes exposing (class, classList, id)
 import Html.Events exposing (onClick)
 import Http
 import Json.Decode as Json exposing ((:=))
@@ -42,6 +42,11 @@ type alias Response =
   , end : Maybe Int
   }
 
+type alias Project =
+  { name : String
+  , id : Int
+  }
+
 type alias Model =
   { pincode : String
   , status : Status
@@ -49,6 +54,8 @@ type alias Model =
   , tickStatus : TickStatus
   , date : Maybe Time.Time
   , connected : Bool
+  , projects : List Project
+  , selectedProject : Int
   }
 
 initialModel : Model
@@ -59,6 +66,12 @@ initialModel =
   , tickStatus = Ready
   , date = Nothing
   , connected = False
+  , projects = [
+      { name = .name Config.project
+      , id = .id Config.project
+      }
+    ]
+  , selectedProject = 0
   }
 
 init : (Model, Effects Action)
@@ -80,6 +93,7 @@ type Action
   | SubmitCode
   | Tick
   | UpdateDataFromServer (Result Http.Error Response)
+  | SetProject Int
 
 
 update : Action -> Model -> (Model, Effects Action)
@@ -111,10 +125,10 @@ update action model =
     SubmitCode ->
       let
         url = Config.backendUrl ++ "/api/v1.0/timewatch-punch"
-
+        projectId = toString model.selectedProject
       in
         ( { model | status <- Fetching }
-        , getJson url Config.accessToken model.pincode
+        , getJson url Config.accessToken model.pincode projectId
         )
 
     SetDate time ->
@@ -181,6 +195,22 @@ update action model =
       )
 
 
+    SetProject projectId ->
+      let
+        id =
+          -- Reset selected project in case we want to disable the selected one.
+          if projectId == model.selectedProject
+            then 0
+            -- Set project as the selected one.
+            else projectId
+
+      in
+        ( { model | selectedProject <- id }
+        , Effects.none
+        )
+
+
+
 getErrorMessageFromHttpResponse : Http.Error -> String
 getErrorMessageFromHttpResponse error =
   case error of
@@ -227,10 +257,6 @@ view address model =
           [ span [ class <| "light " ++ className ] []]
 
 
-    simpleDiv class' =
-      div [ class  class' ] []
-
-
     pincodeText delta =
       let
         text' =
@@ -258,9 +284,9 @@ view address model =
           [ class "col-xs-5 main-header pin-code text-center" ]
           [ div
               [ class "code clearfix" ]
-              [ simpleDiv "item icon fa fa-lock"
-                , span [] ( List.map pincodeText [0..3] )
-                , div [ class "item icon -dynamic-icon" ] [ icon ]
+              [ div [ class "item icon fa fa-lock" ] []
+              , span [] (List.map pincodeText [0..3])
+              , div [ class "item icon -dynamic-icon" ] [ icon ]
               ]
           ]
 
@@ -369,6 +395,25 @@ view address model =
             ]
 
 
+    projectsButtons : Project -> Html
+    projectsButtons project =
+      let
+        className =
+          [ ("-with-icon clear-btn project", True)
+          , ("-active", project.id == model.selectedProject)
+          ]
+
+
+      in
+        button
+            [ classList className
+            , onClick address (SetProject project.id)
+            ]
+            [ i [ class "fa fa-server icon" ] []
+            , text  <| " " ++ project.name
+            ]
+
+
   in
     div
         [ class "container" ]
@@ -379,8 +424,8 @@ view address model =
               , ledLight
               , div
                   [ class "col-xs-5 text-center" ]
-                  [ span [] []
-                    , div [ class "numbers-pad" ] []
+                  [ span [] (List.map projectsButtons model.projects)
+                  , div [ class "numbers-pad" ] []
                   ]
               , message
             ]
@@ -418,24 +463,26 @@ viewMessage message =
 
 -- EFFECTS
 
-getJson : String -> String -> String -> Effects Action
-getJson url accessToken pincode =
+getJson : String -> String -> String -> String -> Effects Action
+getJson url accessToken pincode projectId =
   Http.send Http.defaultSettings
     { verb = "POST"
     , headers = [ ("access-token", accessToken) ]
     , url = url
-    , body = ( Http.string <| dataToJson pincode )
+    , body = (Http.string <| dataToJson pincode projectId)
     }
     |> Http.fromJson decodeResponse
     |> Task.toResult
     |> Task.map UpdateDataFromServer
     |> Effects.task
 
-dataToJson : String -> String
-dataToJson code =
+dataToJson : String -> String -> String
+dataToJson code projectId =
   JE.encode 0
     <| JE.object
-        [ ("pincode", JE.string code) ]
+        [ ("pincode", JE.string code)
+        , ("project", JE.string projectId)
+        ]
 
 decodeResponse : Json.Decoder Response
 decodeResponse =

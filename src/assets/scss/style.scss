@@ -47,6 +47,7 @@ body {
   &.-with-icon {
     position: relative;
     padding: 5px 7px;
+    @include transition(0.4s ease-in-out background-color);
 
     &:before {
       content: "";
@@ -69,7 +70,6 @@ body {
     color: #555250;
     border-color: $border-dark;
     @extend .hard-shadow;
-    font-weight: 400;
 
     &:before {
       background-color: $border-dark;
