@@ -28,9 +28,12 @@ type Message =
 
 type Status =
   Init
+  -- User is in the middle of typing, before a request is sent.
+  | InProgress
   | Fetching
   | Fetched UserAction
   | HttpError Http.Error
+
 
 type TickStatus = Ready | Waiting
 
@@ -82,7 +85,7 @@ initialModel =
 init : (Model, Effects Action)
 init =
   ( initialModel
-  , Effects.batch [getDate, tick]
+  , Effects.batch [getDate, (tick 1 Tick)]
   )
 
 pincodeLength = 4
@@ -94,6 +97,7 @@ type Action
   = AddDigit Int
   | DeleteDigit
   | NoOp
+  | Reset
   | SetDate Time.Time
   | SetProject Int
   | SetMessage Message
@@ -128,7 +132,7 @@ update action model =
       in
         ( { model
           | pincode <- pincode'
-          , status <- Init
+          , status <- InProgress
           }
         , Effects.batch effects'
         )
@@ -138,10 +142,10 @@ update action model =
         pincodeLength =
           length model.pincode
 
-        pincode' =
+        (pincode', status') =
           if pincodeLength > 0
-            then String.slice 0 (pincodeLength - 1) model.pincode
-            else ""
+            then (String.slice 0 (pincodeLength - 1) model.pincode, InProgress)
+            else ("", Init)
 
       in
         ( { model
@@ -154,6 +158,22 @@ update action model =
       ( model
       , Effects.none
       )
+
+    Reset ->
+      let
+        model' =
+          if model.status == InProgress
+            then
+               model
+            else
+              { model
+              | status <- Init
+              , selectedProject <- Nothing
+              }
+      in
+        ( model'
+        , Effects.none
+        )
 
     SetDate time ->
         ( { model
@@ -178,7 +198,7 @@ update action model =
 
     SetMessage message ->
       ( { model | message <- message }
-        , Effects.none
+        , tick 3.5 Reset
       )
 
     SetTouchDevice val ->
@@ -209,7 +229,7 @@ update action model =
       let
         effects =
           if model.tickStatus == Ready
-            then Effects.batch [ getDate, tick ]
+            then Effects.batch [ getDate, (tick 1 Tick) ]
             else Effects.none
       in
         ( { model | tickStatus <- Waiting }
@@ -260,6 +280,11 @@ update action model =
       , Effects.none
       )
 
+-- setTimeOut : Int -> Action ->  Effects Action
+setTimeOut milliseconds action =
+  Task.sleep milliseconds
+    |> Task.map (\_ -> action)
+    |> Effects.task
 
 getErrorMessageFromHttpResponse : Http.Error -> String
 getErrorMessageFromHttpResponse error =
@@ -323,6 +348,7 @@ view address model =
         className =
           case model.status of
             Init -> ""
+            InProgress -> ""
             Fetching -> "fa-circle-o-notch fa-spin"
             Fetched Enter -> "fa-check -success -in"
             Fetched Leave -> "fa-check -success -out"
@@ -381,6 +407,7 @@ view address model =
         -- Adding a "class" to toggle the view display (hide/show).
         visibilityClass =
           if | model.status == Init -> ""
+             | model.status == InProgress -> ""
              | model.status == Fetching -> ""
              | otherwise -> "-active"
 
@@ -404,6 +431,9 @@ view address model =
               i [ class "fa icon fa-exclamation-triangle" ] []
 
             Init ->
+              i [] []
+
+            InProgress ->
               i [] []
 
             _ ->
@@ -613,8 +643,8 @@ getDate : Effects Action
 getDate =
   Task.map SetDate getCurrentTime |> Effects.task
 
-tick : Effects Action
-tick =
-  Task.sleep (1 * Time.second)
-    |> Task.map (\_ -> Tick)
+tick : Float -> Action -> Effects Action
+tick sec action =
+  Task.sleep (sec * Time.second)
+    |> Task.map (\_ -> action)
     |> Effects.task
