@@ -6,10 +6,10 @@ import Date exposing (..)
 import Date.Format as DF exposing (format)
 import Effects exposing (Effects, Never)
 import Html exposing (..)
-import Html.Attributes exposing (class, classList, id)
-import Html.Events exposing (onClick)
+import Html.Attributes exposing (class, classList, id, disabled, hidden)
+import Html.Events exposing (onClick, on)
 import Http
-import Json.Decode as Json exposing ((:=))
+import Json.Decode as Json exposing ((:=), value)
 import Json.Encode as JE
 import String exposing (length)
 import Task
@@ -40,10 +40,11 @@ type alias Response =
   { employee : String
   , start : Int
   , end : Maybe Int
+  , project : Maybe String
   }
 
 type alias Project =
-  { name : String
+  { label : String
   , id : Int
   }
 
@@ -55,7 +56,9 @@ type alias Model =
   , date : Maybe Time.Time
   , connected : Bool
   , projects : List Project
-  , selectedProject : Int
+  , selectedProject : Maybe Int
+  , isTouchDevice : Bool
+  , pressedButton : Maybe Int
   }
 
 initialModel : Model
@@ -67,11 +70,13 @@ initialModel =
   , date = Nothing
   , connected = False
   , projects = [
-      { name = .name Config.project
+      { label = .label Config.project
       , id = .id Config.project
       }
     ]
-  , selectedProject = 0
+  , selectedProject = Nothing
+  , isTouchDevice = False
+  , pressedButton = Nothing
   }
 
 init : (Model, Effects Action)
@@ -87,14 +92,17 @@ pincodeLength = 4
 
 type Action
   = AddDigit Int
-  | Reset
+  | DeleteDigit
+  | NoOp
   | SetDate Time.Time
+  | SetProject Int
   | SetMessage Message
+  | SetTouchDevice Bool
+  | SetPressedButton Int
   | SubmitCode
   | Tick
   | UpdateDataFromServer (Result Http.Error Response)
-  | SetProject Int
-
+  | UnsetPressedButton
 
 update : Action -> Model -> (Model, Effects Action)
 update action model =
@@ -106,30 +114,46 @@ update action model =
             then model.pincode ++ toString(digit)
             else model.pincode
 
+        defaultEffect =
+          [ Task.succeed (SetPressedButton digit) |> Effects.task ]
+
         effects' =
           -- Calling submit code when pincode length is one less than the needed
           -- length, since at this point the model isn't updated yet with the
           -- current digit.
           if length model.pincode == pincodeLength - 1
-            then Task.succeed SubmitCode |> Effects.task
-            else Effects.none
+            then (Task.succeed SubmitCode |> Effects.task) :: defaultEffect
+            else defaultEffect
 
       in
         ( { model
           | pincode <- pincode'
           , status <- Init
           }
-        , effects'
+        , Effects.batch effects'
         )
 
-    SubmitCode ->
+    DeleteDigit ->
       let
-        url = Config.backendUrl ++ "/api/v1.0/timewatch-punch"
-        projectId = toString model.selectedProject
+        pincodeLength =
+          length model.pincode
+
+        pincode' =
+          if pincodeLength > 0
+            then String.slice 0 (pincodeLength - 1) model.pincode
+            else ""
+
       in
-        ( { model | status <- Fetching }
-        , getJson url Config.accessToken model.pincode projectId
+        ( { model
+          | pincode <- pincode'
+          }
+        , Task.succeed (SetPressedButton -1) |> Effects.task
         )
+
+    NoOp ->
+      ( model
+      , Effects.none
+      )
 
     SetDate time ->
         ( { model
@@ -137,6 +161,48 @@ update action model =
           , date <- Just time
           }
         , Effects.none
+        )
+
+    SetProject projectId ->
+      let
+        id =
+          case model.selectedProject of
+            -- In case we want to disable the current selected project.
+            Just val -> Nothing
+            -- In case we have no selecte project and want to assign one.
+            Nothing -> Just projectId
+      in
+        ( { model | selectedProject <- id }
+        , Effects.none
+        )
+
+    SetMessage message ->
+      ( { model | message <- message }
+        , Effects.none
+      )
+
+    SetTouchDevice val ->
+      ( { model | isTouchDevice <- val }
+      , Effects.none
+      )
+
+    SetPressedButton val ->
+      ( { model | pressedButton <- Just val }
+      , Effects.none
+      )
+
+    SubmitCode ->
+      let
+        url = Config.backendUrl ++ "/api/v1.0/timewatch-punch"
+
+        projectId =
+          case model.selectedProject of
+            Just val -> toString val
+            Nothing -> ""
+
+      in
+        ( { model | status <- Fetching }
+        , getJson url Config.accessToken model.pincode projectId
         )
 
     Tick ->
@@ -163,7 +229,6 @@ update action model =
                 -- When the end date exist, it means the session was closed.
                 Just int -> Leave
 
-
             greeting =
               if operation == Enter then "Hi" else "Bye"
 
@@ -174,6 +239,7 @@ update action model =
             ( { model
               | status <- Fetched operation
               , pincode <- ""
+              , selectedProject <- Nothing
               }
             , Task.succeed (SetMessage (Success message)) |> Effects.task
             )
@@ -189,26 +255,10 @@ update action model =
             , Task.succeed (SetMessage <| Error message) |> Effects.task
             )
 
-    SetMessage message ->
-      ( { model | message <- message }
+    UnsetPressedButton ->
+      ( { model | pressedButton <- Nothing }
       , Effects.none
       )
-
-
-    SetProject projectId ->
-      let
-        id =
-          -- Reset selected project in case we want to disable the selected one.
-          if projectId == model.selectedProject
-            then 0
-            -- Set project as the selected one.
-            else projectId
-
-      in
-        ( { model | selectedProject <- id }
-        , Effects.none
-        )
-
 
 
 getErrorMessageFromHttpResponse : Http.Error -> String
@@ -226,7 +276,8 @@ getErrorMessageFromHttpResponse error =
          | otherwise -> "Unknown error has occurred"
 
     Http.NetworkError ->
-      "A network error has occured"
+      -- "A network error has occured"
+      toString error
 
     Http.UnexpectedPayload message ->
       "Unexpected response: " ++ message
@@ -235,26 +286,28 @@ getErrorMessageFromHttpResponse error =
       "Unexpected error: " ++ toString error
 
 
--- VIEW
+isButtonPressed : Int -> Maybe Int -> Bool
+isButtonPressed id pressedButoon =
+  case pressedButoon of
+    Just val -> id == val
+    Nothing -> False
 
+
+clickEvent: Bool -> (String, String)
+clickEvent isTouchDevice =
+  if isTouchDevice
+    then ("touchstart", "touchend")
+    else ("mousedown", "mouseup")
+
+-- VIEW
 view : Signal.Address Action -> Model -> Html
 view address model =
   let
-    digitButton digit =
-      button [ onClick address (AddDigit digit) ] [ text <| toString digit ]
-
 
     ledLight =
-      let
-        className =
-          case model.connected of
-            False -> "-off"
-            True -> "-on"
-
-      in
-        div
-          [ class "col-xs-2 main-header led text-center" ]
-          [ span [ class <| "light " ++ className ] []]
+      div
+        [ class "col-xs-2 main-header led text-center" ]
+        [ span [ class "light -on" ] []]
 
 
     pincodeText delta =
@@ -281,14 +334,14 @@ view address model =
 
     pincode =
       div
-          [ class "col-xs-5 main-header pin-code text-center" ]
-          [ div
-              [ class "code clearfix" ]
-              [ div [ class "item icon fa fa-lock" ] []
-              , span [] (List.map pincodeText [0..3])
-              , div [ class "item icon -dynamic-icon" ] [ icon ]
-              ]
-          ]
+        [ class "col-xs-5 main-header pin-code text-center" ]
+        [ div
+            [ class "code clearfix" ]
+            [ div [ class "item icon fa fa-lock" ] []
+            , span [] (List.map pincodeText [0..3])
+            , div [ class "item icon -dynamic-icon" ] [ icon ]
+            ]
+        ]
 
 
     clockIcon =
@@ -313,12 +366,14 @@ view address model =
 
     date =
       div
-          [ class "col-xs-5 main-header info text-center" ]
-          [ span [][ text dateString ]
-          , span
-                [ class "time" ]
-                [ clockIcon , span [] [ text timeString ] ]
-          ]
+        [ class "col-xs-5 main-header info text-center" ]
+        [ span [][ text dateString ]
+        , span
+            [ class "time" ]
+            [ clockIcon
+            , span [] [ text timeString ]
+            ]
+      ]
 
 
     message =
@@ -328,7 +383,6 @@ view address model =
           if | model.status == Init -> ""
              | model.status == Fetching -> ""
              | otherwise -> "-active"
-
 
         msgClass =
           case model.status of
@@ -381,18 +435,18 @@ view address model =
 
       in
         div
-            [ class "col-xs-7 view" ]
-            [ div
-                [ class <| "main " ++ visibilityClass ]
-                [ div
-                    [ class "wrapper" ]
-                    [ div
-                        [ class <| "message " ++ msgClass ]
-                        [ span [] [ msgIcon , text msgText ] ]
-                    ]
-                , div [ class "text-center" ] [ actionIcon ]
-                ]
-            ]
+          [ class "col-xs-7 view" ]
+          [ div
+              [ class <| "main " ++ visibilityClass ]
+              [ div
+                  [ class "wrapper" ]
+                  [ div
+                      [ class <| "message " ++ msgClass ]
+                      [ span [] [ msgIcon , text msgText ] ]
+                  ]
+              , div [ class "text-center" ] [ actionIcon ]
+              ]
+          ]
 
 
     projectsButtons : Project -> Html
@@ -400,54 +454,115 @@ view address model =
       let
         className =
           [ ("-with-icon clear-btn project", True)
-          , ("-active", project.id == model.selectedProject)
+          , ("-active", isButtonPressed project.id model.selectedProject)
           ]
 
+        (clickStartEvent, clickEndEvent) =
+            clickEvent model.isTouchDevice
 
       in
         button
-            [ classList className
-            , onClick address (SetProject project.id)
-            ]
-            [ i [ class "fa fa-server icon" ] []
-            , text  <| " " ++ project.name
-            ]
+          [ classList className
+          , on clickStartEvent Json.value (\_ -> Signal.message address (SetProject project.id))
+          ]
+          [ i [ class "fa fa-server icon" ] []
+          , text  <| " " ++ project.label
+          ]
+
+    projects = span [] (List.map projectsButtons model.projects)
+
+    digitButton digit =
+      let
+        className =
+          [ ("clear-btn digit", True)
+          , ("-double", digit == 0)
+          , ("-active", isButtonPressed digit model.pressedButton)
+          ]
+
+        disable =
+          if model.status == Fetching
+            then True
+            else False
+
+        action digit =
+          if disable
+            then NoOp
+            else AddDigit digit
+
+        (clickStartEvent, clickEndEvent) =
+            clickEvent model.isTouchDevice
+
+      in
+        button
+          [ classList className
+          , on clickStartEvent Json.value (\_ -> Signal.message address (action digit))
+          , on clickEndEvent Json.value (\_ -> Signal.message address UnsetPressedButton)
+          , disabled disable
+          ]
+          [ text <| toString digit ]
 
 
-  in
-    div
-        [ class "container" ]
-        [ div
-            [ class "row dashboard" ]
-            [ pincode
-              , date
-              , ledLight
-              , div
-                  [ class "col-xs-5 text-center" ]
-                  [ span [] (List.map projectsButtons model.projects)
-                  , div [ class "numbers-pad" ] []
-                  ]
-              , message
-            ]
-        , viewMainContent address model
+    deleteButton =
+      let
+        className =
+          [ ("clear-btn -delete", True)
+          , ("-active", isButtonPressed -1 model.pressedButton)
+          ]
+
+        disable =
+          if ( length model.pincode == 0 || model.status == Fetching )
+            then True
+            else False
+
+        action =
+          if disable
+            then NoOp
+            else DeleteDigit
+
+        (clickStartEvent, clickEndEvent) =
+            clickEvent model.isTouchDevice
+
+      in
+        button
+          [ classList className
+          , on clickStartEvent Json.value (\_ -> Signal.message address action)
+          , on clickEndEvent Json.value (\_ -> Signal.message address UnsetPressedButton)
+          , disabled disable
+          ]
+          [ i [ class "fa fa-long-arrow-left" ] [] ]
+
+
+    padButtons =
+      div
+        [ class "numbers-pad" ]
+        [ span [] ( List.map digitButton [0..9] |> List.reverse )
+        , deleteButton
         ]
 
 
+    debugBlock =
+      div
+        [ class "model-debug", hidden (not Config.debugMode) ]
+        [ text <| toString model
+        , (viewMessage model.message)
+        ]
 
-viewMainContent : Signal.Address Action -> Model -> Html
-viewMainContent address model =
-  let
-    digitButton digit =
-      button [ onClick address (AddDigit digit) ] [ text <| toString digit ]
   in
     div
-      [ class "keypad" ]
+      [ class "container" ]
       [ div
-          [ class "number-buttons" ]
-          ( List.map digitButton [0..9] |> List.reverse )
-      , (viewMessage model.message)
-      , div [ class "model-debug" ] [ text <| toString model ]
+          [ class "row dashboard" ]
+          [ pincode
+          , date
+          , ledLight
+          , div
+              [ class "col-xs-5 text-center" ]
+              [ projects, padButtons ]
+          , message
+          ]
+      , debugBlock
       ]
+
 
 viewMessage : Message -> Html
 viewMessage message =
@@ -487,10 +602,11 @@ dataToJson code projectId =
 decodeResponse : Json.Decoder Response
 decodeResponse =
   Json.at ["data"]
-    <| Json.object3 Response
+    <| Json.object4 Response
       ("employee" := Json.string)
       ("start" := Json.int)
       (Json.maybe ("end" := Json.int))
+      (Json.maybe ("project" := Json.string))
 
 
 getDate : Effects Action

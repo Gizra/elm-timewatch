@@ -10,7 +10,7 @@ app =
     { init = init
     , update = update
     , view = view
-    , inputs = []
+    , inputs = [ Signal.map App.SetTouchDevice isTouchDevice ]
     }
 
 
@@ -21,3 +21,6 @@ main =
 port tasks : Signal (Task.Task Never ())
 port tasks =
   app.tasks
+
+
+port isTouchDevice : Signal Bool

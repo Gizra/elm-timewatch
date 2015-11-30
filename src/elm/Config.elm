@@ -1,12 +1,15 @@
 module Config where
 
-backendUrl : String
-backendUrl = "http://localhost/productivity/www"
-
 accessToken : String
-accessToken = "iNP3aLho0fYT_mxgsd5ZrYXUcJh6i_Rku2sG6dY4G-k"
+accessToken = "SujuZGJMeSX2yRwcqRpXX6RtF2LJPY6Q2QBXovA-5Uc"
+
+backendUrl : String
+backendUrl = "http://192.168.1.27/productivity/www"
+
+debugMode : Bool
+debugMode = True
 
 project =
-  { name = "Negawatt project"
-  , id = 33
+  { label = "Negawatt project"
+  , id = 7
   }
