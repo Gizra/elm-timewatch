@@ -234,6 +234,7 @@ update action model =
       in
         ( { model
           | tickStatus <- Waiting
+          -- Toggling connected (Bool) so the "ledLight" will blink every 1 sec.
           , connected <- not (model.connected)
           }
         , effects
