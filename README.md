@@ -1,6 +1,6 @@
-# Hi
+> elm-timewatch
 
-Work attendance clock client.
+Work attendance clock client. See [gif](http://gfycat.com/ClassicSplendidDikkops)
 
 ## Install
 
