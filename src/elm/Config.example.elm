@@ -22,3 +22,8 @@ project =
   { label = "Project name"
   , id = 1
   }
+
+
+pincodeLength : Int
+pincodeLength =
+  4

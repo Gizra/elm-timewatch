@@ -1,6 +1,6 @@
 module App (..) where
 
-import Config exposing (backendUrl, accessToken)
+import Config exposing (backendUrl, accessToken, pincodeLength)
 import Date exposing (..)
 import Date.Format as DF exposing (format)
 import Effects exposing (Effects, Never)
@@ -96,11 +96,6 @@ init =
   ( initialModel
   , Effects.batch [ getDate, (tick 1 Tick) ]
   )
-
-
-pincodeLength : number
-pincodeLength =
-  4
 
 
 
