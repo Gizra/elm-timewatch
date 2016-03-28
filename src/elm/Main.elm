@@ -1,3 +1,4 @@
+module Main (..) where
 
 import Effects exposing (Never)
 import App exposing (init, update, view)
