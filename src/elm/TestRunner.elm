@@ -15,4 +15,4 @@ allTests =
 
 main : Element
 main =
-  runDisplay allTests
+  elementRunner allTests
