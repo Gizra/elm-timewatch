@@ -4,12 +4,12 @@ accessToken : String
 accessToken = "SujuZGJMeSX2yRwcqRpXX6RtF2LJPY6Q2QBXovA-5Uc"
 
 backendUrl : String
-backendUrl = "http://192.168.1.27/productivity/www"
+backendUrl = "http://live-productivity.pantheon.io/"
 
 debugMode : Bool
-debugMode = True
+debugMode = False
 
 project =
   { label = "Negawatt project"
-  , id = 7
+  , id = 33
   }
