@@ -1,4 +1,4 @@
-module AppTest (..) where
+module AppTest exposing (..)
 
 import ElmTest exposing (..)
 import App exposing (Model)

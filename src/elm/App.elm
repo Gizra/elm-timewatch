@@ -1,4 +1,4 @@
-module App (..) where
+module App exposing (..)
 
 import Config exposing (backendUrl, accessToken, pincodeLength)
 import Date exposing (..)

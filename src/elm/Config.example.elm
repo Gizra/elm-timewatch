@@ -1,5 +1,4 @@
-module Config (..) where
-
+module Config exposing (..)
 
 accessToken : String
 accessToken =

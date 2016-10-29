@@ -1,6 +1,5 @@
-module Main (..) where
+module Main exposing (..)
 
-import Effects exposing (Never)
 import App exposing (init, update, view)
 import StartApp
 import Task
