@@ -1,12 +1,12 @@
 module Main exposing (..)
 
 import App exposing (init, update, view)
-import StartApp
 import Task
+import Html.App as Html
 
 
 app =
-  StartApp.start
+  Html.program
     { init = init
     , update = update
     , view = view

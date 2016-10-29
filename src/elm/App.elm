@@ -3,7 +3,6 @@ module App exposing (..)
 import Config exposing (backendUrl, accessToken, pincodeLength)
 import Date exposing (..)
 import Date.Format as DF exposing (format)
-import Effects exposing (Effects, Never)
 import Html exposing (..)
 import Html.Attributes exposing (class, classList, id, disabled, hidden)
 import Html.Events exposing (onClick, on)
@@ -12,9 +11,8 @@ import Json.Decode as Json exposing ((:=), value)
 import Json.Encode as JE
 import String exposing (length)
 import Task
-import TaskTutorial exposing (getCurrentTime)
 import Time exposing (second)
-
+import Platform.Cmd as Cmd exposing (Cmd)
 
 -- MODEL
 
@@ -91,10 +89,10 @@ initialModel =
   }
 
 
-init : ( Model, Effects Action )
+init : ( Model, Cmd Msg)
 init =
   ( initialModel
-  , Effects.batch [ getDate, (tick 1 Tick) ]
+  , Cmd.batch [ getDate, (tick 1 Tick) ]
   )
 
 
@@ -102,7 +100,7 @@ init =
 -- UPDATE
 
 
-type Action
+type Msg
   = AddDigit Int
   | DeleteDigit
   | NoOp
@@ -118,9 +116,9 @@ type Action
   | UnsetPressedButton
 
 
-update : Action -> Model -> ( Model, Effects Action )
-update action model =
-  case action of
+update : Msg -> Model -> ( Model, Cmd Msg )
+update msg model =
+  case msg of
     AddDigit digit ->
       let
         pincode' =
@@ -130,14 +128,14 @@ update action model =
             model.pincode
 
         defaultEffect =
-          [ Task.succeed (SetPressedButton digit) |> Effects.task ]
+          [ Task.succeed (SetPressedButton digit) |> Task.perform ]
 
         effects' =
           -- Calling submit code when pincode length is one less than the needed
           -- length, since at this point the model isn't updated yet with the
           -- current digit.
           if length model.pincode == pincodeLength - 1 then
-            (Task.succeed SubmitCode |> Effects.task) :: defaultEffect
+            (Task.succeed SubmitCode |> Task.perform) :: defaultEffect
           else
             defaultEffect
       in
@@ -145,7 +143,7 @@ update action model =
             | pincode = pincode'
             , status = InProgress
           }
-        , Effects.batch effects'
+        , Cmd.batch effects'
         )
 
     DeleteDigit ->
@@ -162,12 +160,12 @@ update action model =
         ( { model
             | pincode = pincode'
           }
-        , Task.succeed (SetPressedButton -1) |> Effects.task
+        , Task.succeed (SetPressedButton -1) |> Task.perform
         )
 
     NoOp ->
       ( model
-      , Effects.none
+      , Cmd.none
       )
 
     Reset ->
@@ -182,7 +180,7 @@ update action model =
             }
       in
         ( model'
-        , Effects.none
+        , Cmd.none
         )
 
     SetDate time ->
@@ -190,7 +188,7 @@ update action model =
           | tickStatus = Ready
           , date = Just time
         }
-      , Effects.none
+      , Cmd.none
       )
 
     SetProject projectId ->
@@ -206,7 +204,7 @@ update action model =
               Just projectId
       in
         ( { model | selectedProject = id }
-        , Effects.none
+        , Cmd.none
         )
 
     SetMessage message ->
@@ -216,12 +214,12 @@ update action model =
 
     SetTouchDevice val ->
       ( { model | isTouchDevice = val }
-      , Effects.none
+      , Cmd.none
       )
 
     SetPressedButton val ->
       ( { model | pressedButton = Just val }
-      , Effects.none
+      , Cmd.none
       )
 
     SubmitCode ->
@@ -245,9 +243,9 @@ update action model =
       let
         effects =
           if model.tickStatus == Ready then
-            Effects.batch [ getDate, (tick 1 Tick) ]
+            Cmd.batch [ getDate, (tick 1 Tick) ]
           else
-            Effects.none
+            Cmd.none
       in
         ( { model | tickStatus = Waiting }
         , effects
@@ -282,7 +280,7 @@ update action model =
                 , pincode = ""
                 , selectedProject = Nothing
               }
-            , Task.succeed (SetMessage (Success message)) |> Effects.task
+            , Task.succeed (SetMessage (Success message)) |> Task.perform
             )
 
         Err error ->
@@ -294,20 +292,20 @@ update action model =
                 | status = HttpError error
                 , pincode = ""
               }
-            , Task.succeed (SetMessage <| Error message) |> Effects.task
+            , Task.succeed (SetMessage <| Error message) |> Task.perform
             )
 
     UnsetPressedButton ->
       ( { model | pressedButton = Nothing }
-      , Effects.none
+      , Cmd.none
       )
 
 
-setTimeOut : Float -> Action -> Effects Action
+setTimeOut : Float -> Msg -> Cmd Msg
 setTimeOut milliseconds action =
-  Task.sleep milliseconds
+  Process.sleep milliseconds
     |> Task.map (\_ -> action)
-    |> Effects.task
+    |> Task.perform
 
 
 getErrorMessageFromHttpResponse : Http.Error -> String
@@ -359,7 +357,7 @@ clickEvent isTouchDevice =
 -- VIEW
 
 
-view : Signal.Address Action -> Model -> Html
+view : Model -> Html Msg
 view address model =
   let
     ledLight =
@@ -520,7 +518,7 @@ view address model =
               ]
           ]
 
-    projectsButtons : Project -> Html
+    projectsButtons : Project -> Html Msg
     projectsButtons project =
       let
         className =
@@ -533,7 +531,7 @@ view address model =
       in
         button
           [ classList className
-          , on clickStartEvent Json.value (\_ -> Signal.message address (SetProject project.id))
+          , on clickStartEvent Json.value (\_ -> SetProject project.id)
           ]
           [ i [ class "fa fa-server icon" ] []
           , text <| " " ++ project.label
@@ -567,8 +565,8 @@ view address model =
       in
         button
           [ classList className
-          , on clickStartEvent Json.value (\_ -> Signal.message address (action digit))
-          , on clickEndEvent Json.value (\_ -> Signal.message address UnsetPressedButton)
+          , on clickStartEvent Json.value (\_ -> address (action digit))
+          , on clickEndEvent Json.value (\_ -> address UnsetPressedButton)
           , disabled disable
           ]
           [ text <| toString digit ]
@@ -597,8 +595,8 @@ view address model =
       in
         button
           [ classList className
-          , on clickStartEvent Json.value (\_ -> Signal.message address action)
-          , on clickEndEvent Json.value (\_ -> Signal.message address UnsetPressedButton)
+          , on clickStartEvent Json.value (\_ -> address action)
+          , on clickEndEvent Json.value (\_ -> address UnsetPressedButton)
           , disabled disable
           ]
           [ i [ class "fa fa-long-arrow-left" ] [] ]
@@ -633,7 +631,7 @@ view address model =
       ]
 
 
-viewMessage : Message -> Html
+viewMessage : Message -> Html Msg
 viewMessage message =
   let
     ( className, string ) =
@@ -654,7 +652,7 @@ viewMessage message =
 -- EFFECTS
 
 
-getJson : String -> String -> String -> String -> Effects Action
+getJson : String -> String -> String -> String -> Cmd Msg
 getJson url accessToken pincode projectId =
   Http.send
     Http.defaultSettings
@@ -666,7 +664,7 @@ getJson url accessToken pincode projectId =
     |> Http.fromJson decodeResponse
     |> Task.toResult
     |> Task.map UpdateDataFromServer
-    |> Effects.task
+    |> Task.perform
 
 
 dataToJson : String -> String -> String
@@ -689,13 +687,13 @@ decodeResponse =
         (Json.maybe ("project" := Json.string))
 
 
-getDate : Effects Action
+getDate : Cmd Msg
 getDate =
-  Task.map SetDate getCurrentTime |> Effects.task
+  Task.map SetDate NoOp CurrentTime |> Task.perform
 
 
-tick : Float -> Action -> Effects Action
+tick : Float -> Msg -> Cmd Msg
 tick sec action =
-  Task.sleep (sec * Time.second)
+  Process.sleep (sec * Time.second)
     |> Task.map (\_ -> action)
-    |> Effects.task
+    |> Task.perform
